@@ -947,7 +947,6 @@ pub mod credential {
     }
 }
 
-///
 pub mod commitgraph {
     #[derive(Debug, clap::Subcommand)]
     pub enum Subcommands {
@@ -1189,5 +1188,4 @@ pub mod submodule {
     }
 }
 
-///
 pub mod free;

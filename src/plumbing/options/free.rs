@@ -22,7 +22,6 @@ pub enum Subcommands {
     Discover,
 }
 
-///
 pub mod commitgraph {
     use std::path::PathBuf;
 
@@ -102,7 +101,6 @@ pub mod index {
     }
 }
 
-///
 pub mod pack {
     use std::{ffi::OsString, path::PathBuf};
 
@@ -290,7 +288,6 @@ pub mod pack {
         pub re_encode: bool,
     }
 
-    ///
     pub mod multi_index {
         use std::path::PathBuf;
 
@@ -324,7 +321,6 @@ pub mod pack {
         }
     }
 
-    ///
     pub mod index {
         use std::path::PathBuf;
 
@@ -461,7 +457,6 @@ pub mod pack {
     use clap_util::{AsAlgorithm, AsIterationMode, AsObjectExpansion, AsSafetyCheck};
 }
 
-///
 pub mod mailmap {
     use std::path::PathBuf;
 
