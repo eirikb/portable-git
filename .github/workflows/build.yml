@@ -2,7 +2,10 @@ name: Build
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main,
+                # TODO:
+                feature/eirikb/build,
+    ]
   pull_request:
     branches: [ main ]
   release:
@@ -22,27 +25,16 @@ jobs:
           - target: x86_64-unknown-linux-gnu
             os: ubuntu-latest
             name: linux-x64
-          - target: aarch64-unknown-linux-gnu
-            os: ubuntu-latest
-            name: linux-arm64
-            cross: true
-
           - target: x86_64-apple-darwin
-            os: macos-latest
+            os: macos-13
             name: macos-x64
           - target: aarch64-apple-darwin
             os: macos-latest
             name: macos-arm64
-
           - target: x86_64-pc-windows-msvc
             os: windows-latest
             name: windows-x64
             ext: .exe
-          - target: aarch64-pc-windows-msvc
-            os: windows-latest
-            name: windows-arm64
-            ext: .exe
-            cross: true
 
     steps:
       - name: Checkout code
@@ -52,11 +44,6 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.target }}
-
-      - name: Install cross-compilation tools
-        if: matrix.cross
-        run: |
-          cargo install cross --git https://github.com/cross-rs/cross
 
       - name: Cache Rust dependencies
         uses: actions/cache@v4
@@ -70,13 +57,8 @@ jobs:
             ${{ runner.os }}-cargo-${{ matrix.target }}-
             ${{ runner.os }}-cargo-
 
-      - name: Build (native)
-        if: "!matrix.cross"
+      - name: Build
         run: cargo build --release --target ${{ matrix.target }}
-
-      - name: Build (cross-compile)
-        if: matrix.cross
-        run: cross build --release --target ${{ matrix.target }}
 
       - name: Create artifact directory
         run: mkdir -p artifacts
