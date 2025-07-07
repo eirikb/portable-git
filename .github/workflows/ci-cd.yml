@@ -85,7 +85,7 @@ jobs:
           if [ "$SHOULD_RELEASE" = "true" ]; then
             echo "Updating Cargo.toml to version $NEW_VERSION"
             sed -i "s/version = \"0.0.0-dev\"/version = \"$NEW_VERSION\"/" Cargo.toml
-            
+          
             # Upload the updated Cargo.toml as artifact
             mkdir -p release-artifacts
             cp Cargo.toml release-artifacts/
@@ -207,31 +207,18 @@ jobs:
       - name: Create artifact directory
         run: mkdir -p artifacts
 
-      - name: Copy binary (Unix)
-        if: "!contains(matrix.os, 'windows')"
+      - name: Copy binary
+        shell: bash
         run: |
           if [ "${{ github.event_name }}" = "push" ] && [ "${{ needs.calculate-version.outputs.should-release }}" = "true" ]; then
-            FILENAME="git-${{ matrix.name }}-v${{ needs.calculate-version.outputs.new-version }}"
+            FILENAME="git-${{ matrix.name }}-v${{ needs.calculate-version.outputs.new-version }}${{ matrix.ext }}"
           else
-            FILENAME="git-${{ matrix.name }}"
+            FILENAME="git-${{ matrix.name }}${{ matrix.ext }}"
           fi
-          cp target/${{ matrix.target }}/release/git artifacts/$FILENAME
-          chmod +x artifacts/$FILENAME
-
-      - name: Copy binary (Windows)
-        if: contains(matrix.os, 'windows')
-        shell: cmd
-        run: |
-          if "${{ github.event_name }}" == "push" (
-            if "${{ needs.calculate-version.outputs.should-release }}" == "true" (
-              set "FILENAME=git-${{ matrix.name }}-v${{ needs.calculate-version.outputs.new-version }}${{ matrix.ext }}"
-            ) else (
-              set "FILENAME=git-${{ matrix.name }}${{ matrix.ext }}"
-            )
-          ) else (
-            set "FILENAME=git-${{ matrix.name }}${{ matrix.ext }}"
-          )
-          copy target/${{ matrix.target }}/release/git${{ matrix.ext }} artifacts\%FILENAME%
+          cp target/${{ matrix.target }}/release/git${{ matrix.ext }} artifacts/$FILENAME
+          if [[ "${{ matrix.os }}" != *"windows"* ]]; then
+            chmod +x artifacts/$FILENAME
+          fi
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
