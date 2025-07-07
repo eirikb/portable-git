@@ -4,7 +4,7 @@ on:
   push:
     branches: [ main,
                 # TODO:
-                feature/*,
+                feature/eirikb/build,
     ]
   pull_request:
     branches: [ main ]
