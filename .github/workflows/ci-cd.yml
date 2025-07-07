@@ -25,27 +25,28 @@ jobs:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Get merged PR info
+        id: pr
+        uses: 8BitJonny/gh-get-current-pr@3.0.0
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Calculate Version from PR Title
         id: version
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # Get the merge commit message (contains PR title)
-          COMMIT_MSG=$(git log -1 --pretty=%s)
-          echo "Commit message: $COMMIT_MSG"
-          
-          # Extract PR title from merge commit (format: "Merge pull request #123 from branch")
-          # Look for PR title in commit body or use commit message directly
-          PR_TITLE=""
-          if [[ "$COMMIT_MSG" =~ ^Merge\ pull\ request ]]; then
-            # Get PR title from commit body
-            PR_TITLE=$(git log -1 --pretty=%b | head -1)
+          # Get PR title if this was a PR merge, otherwise use commit message
+          if [ "${{ steps.pr.outputs.pr_found }}" == "true" ]; then
+            PR_TITLE="${{ steps.pr.outputs.pr_title }}"
+            echo "Found PR #${{ steps.pr.outputs.number }}: $PR_TITLE"
           else
-            # Direct push, use commit message
-            PR_TITLE="$COMMIT_MSG"
+            # Direct push - use commit message
+            PR_TITLE=$(git log -1 --pretty=%s)
+            echo "Direct push - using commit message: $PR_TITLE"
           fi
           
-          echo "PR/Commit title: $PR_TITLE"
+          echo "Using title for versioning: $PR_TITLE"
           
           # Get latest release version
           LATEST=$(gh release list --limit 1 --json tagName -q '.[0].tagName' 2>/dev/null || echo "")
