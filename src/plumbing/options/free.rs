@@ -22,7 +22,6 @@ pub enum Subcommands {
     Discover,
 }
 
-///
 pub mod commitgraph {
     use std::path::PathBuf;
 
@@ -102,7 +101,6 @@ pub mod index {
     }
 }
 
-///
 pub mod pack {
     use std::{ffi::OsString, path::PathBuf};
 
@@ -183,7 +181,10 @@ pub mod pack {
             tips: Vec<OsString>,
         },
         /// Use the gix-protocol to receive a pack, emulating a clone.
-        #[cfg(any(feature = "gitoxide-core-async-client", feature = "gitoxide-core-blocking-client"))]
+        #[cfg(any(
+            feature = "gitoxide-core-async-client",
+            feature = "gitoxide-core-blocking-client"
+        ))]
         Receive {
             /// The protocol version to use. Valid values are 1 and 2
             #[clap(long, short = 'p')]
@@ -290,14 +291,17 @@ pub mod pack {
         pub re_encode: bool,
     }
 
-    ///
     pub mod multi_index {
         use std::path::PathBuf;
 
         #[derive(Debug, clap::Parser)]
         pub struct Platform {
             /// The path to the index file.
-            #[clap(short = 'i', long, default_value = ".git/objects/pack/multi-pack-index")]
+            #[clap(
+                short = 'i',
+                long,
+                default_value = ".git/objects/pack/multi-pack-index"
+            )]
             pub multi_index_path: PathBuf,
 
             /// Subcommands
@@ -324,7 +328,6 @@ pub mod pack {
         }
     }
 
-    ///
     pub mod index {
         use std::path::PathBuf;
 
@@ -380,7 +383,12 @@ pub mod pack {
         impl TypedValueParser for AsObjectExpansion {
             type Value = gitoxide_core::pack::create::ObjectExpansion;
 
-            fn parse_ref(&self, cmd: &Command, arg: Option<&Arg>, value: &OsStr) -> Result<Self::Value, Error> {
+            fn parse_ref(
+                &self,
+                cmd: &Command,
+                arg: Option<&Arg>,
+                value: &OsStr,
+            ) -> Result<Self::Value, Error> {
                 NonEmptyStringValueParser::new()
                     .try_map(|arg| gitoxide_core::pack::create::ObjectExpansion::from_str(&arg))
                     .parse_ref(cmd, arg, value)
@@ -401,7 +409,12 @@ pub mod pack {
         impl TypedValueParser for AsSafetyCheck {
             type Value = gitoxide_core::pack::explode::SafetyCheck;
 
-            fn parse_ref(&self, cmd: &Command, arg: Option<&Arg>, value: &OsStr) -> Result<Self::Value, Error> {
+            fn parse_ref(
+                &self,
+                cmd: &Command,
+                arg: Option<&Arg>,
+                value: &OsStr,
+            ) -> Result<Self::Value, Error> {
                 NonEmptyStringValueParser::new()
                     .try_map(|arg| gitoxide_core::pack::explode::SafetyCheck::from_str(&arg))
                     .parse_ref(cmd, arg, value)
@@ -422,7 +435,12 @@ pub mod pack {
         impl TypedValueParser for AsAlgorithm {
             type Value = gitoxide_core::pack::verify::Algorithm;
 
-            fn parse_ref(&self, cmd: &Command, arg: Option<&Arg>, value: &OsStr) -> Result<Self::Value, Error> {
+            fn parse_ref(
+                &self,
+                cmd: &Command,
+                arg: Option<&Arg>,
+                value: &OsStr,
+            ) -> Result<Self::Value, Error> {
                 NonEmptyStringValueParser::new()
                     .try_map(|arg| gitoxide_core::pack::verify::Algorithm::from_str(&arg))
                     .parse_ref(cmd, arg, value)
@@ -443,7 +461,12 @@ pub mod pack {
         impl TypedValueParser for AsIterationMode {
             type Value = gitoxide_core::pack::index::IterationMode;
 
-            fn parse_ref(&self, cmd: &Command, arg: Option<&Arg>, value: &OsStr) -> Result<Self::Value, Error> {
+            fn parse_ref(
+                &self,
+                cmd: &Command,
+                arg: Option<&Arg>,
+                value: &OsStr,
+            ) -> Result<Self::Value, Error> {
                 NonEmptyStringValueParser::new()
                     .try_map(|arg| gitoxide_core::pack::index::IterationMode::from_str(&arg))
                     .parse_ref(cmd, arg, value)
@@ -461,7 +484,6 @@ pub mod pack {
     use clap_util::{AsAlgorithm, AsIterationMode, AsObjectExpansion, AsSafetyCheck};
 }
 
-///
 pub mod mailmap {
     use std::path::PathBuf;
 

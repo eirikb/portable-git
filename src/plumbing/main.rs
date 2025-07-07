@@ -1,5 +1,5 @@
 // This file is a direct copy from GitoxideLabs/gitoxide
-// Source: https://github.com/GitoxideLabs/gitoxide/blob/main/src/plumbing/main.rs  
+// Source: https://github.com/GitoxideLabs/gitoxide/blob/main/src/plumbing/main.rs
 // No modifications - 100% identical to original
 
 use std::{
@@ -20,8 +20,8 @@ use gix::bstr::{io::BufReadExt, BString};
 use crate::{
     plumbing::{
         options::{
-            attributes, commit, commitgraph, config, credential, exclude, free, fsck, index, mailmap, merge, odb,
-            revision, tree, Args, Subcommands,
+            attributes, commit, commitgraph, config, credential, exclude, free, fsck, index,
+            mailmap, merge, odb, revision, tree, Args, Subcommands,
         },
         show_progress,
     },
@@ -50,7 +50,10 @@ pub mod async_util {
         if verbose {
             let progress = shared::progress_tree(trace);
             let sub_progress = progress.add_child(name);
-            let ui_handle = shared::setup_line_renderer_range(&progress, range.into().unwrap_or(STANDARD_RANGE));
+            let ui_handle = shared::setup_line_renderer_range(
+                &progress,
+                range.into().unwrap_or(STANDARD_RANGE),
+            );
             (Some(ui_handle), Some(sub_progress).into())
         } else {
             (None, None.into())
@@ -93,7 +96,8 @@ pub fn main() -> Result<()> {
                     _ => mode,
                 };
             }
-            let strict_toggle = matches!(mode, Mode::Strict | Mode::StrictWithGitInstallConfig) || args.strict;
+            let strict_toggle =
+                matches!(mode, Mode::Strict | Mode::StrictWithGitInstallConfig) || args.strict;
             mapping.full = mapping.full.strict_config(strict_toggle);
             mapping.reduced = mapping.reduced.strict_config(strict_toggle);
             let git_installation = matches!(
@@ -129,7 +133,8 @@ pub fn main() -> Result<()> {
                     .boolean(gix::config::tree::Gitoxide::PARSE_PRECIOUS)
                     .is_none()
                 {
-                    config_mut.set_raw_value(&gix::config::tree::Gitoxide::PARSE_PRECIOUS, "true")?;
+                    config_mut
+                        .set_raw_value(&gix::config::tree::Gitoxide::PARSE_PRECIOUS, "true")?;
                 }
             }
             Ok(repo)
@@ -266,17 +271,25 @@ pub fn main() -> Result<()> {
                 },
             ),
         },
-        Subcommands::MergeBase(crate::plumbing::options::merge_base::Command { first, others }) => prepare_and_run(
-            "merge-base",
-            trace,
-            verbose,
-            progress,
-            progress_keep_open,
-            None,
-            move |_progress, out, _err| {
-                core::repository::merge_base(repository(Mode::Lenient)?, first, others, out, format)
-            },
-        ),
+        Subcommands::MergeBase(crate::plumbing::options::merge_base::Command { first, others }) => {
+            prepare_and_run(
+                "merge-base",
+                trace,
+                verbose,
+                progress,
+                progress_keep_open,
+                None,
+                move |_progress, out, _err| {
+                    core::repository::merge_base(
+                        repository(Mode::Lenient)?,
+                        first,
+                        others,
+                        out,
+                        format,
+                    )
+                },
+            )
+        }
         Subcommands::Diff(crate::plumbing::options::diff::Platform { cmd }) => match cmd {
             crate::plumbing::options::diff::SubCommands::Tree {
                 old_treeish,
@@ -289,7 +302,12 @@ pub fn main() -> Result<()> {
                 progress_keep_open,
                 None,
                 move |_progress, out, _err| {
-                    core::repository::diff::tree(repository(Mode::Lenient)?, out, old_treeish, new_treeish)
+                    core::repository::diff::tree(
+                        repository(Mode::Lenient)?,
+                        out,
+                        old_treeish,
+                        new_treeish,
+                    )
                 },
             ),
             crate::plumbing::options::diff::SubCommands::File {
@@ -303,7 +321,12 @@ pub fn main() -> Result<()> {
                 progress_keep_open,
                 None,
                 move |_progress, out, _err| {
-                    core::repository::diff::file(repository(Mode::Lenient)?, out, old_revspec, new_revspec)
+                    core::repository::diff::file(
+                        repository(Mode::Lenient)?,
+                        out,
+                        old_revspec,
+                        new_revspec,
+                    )
                 },
             ),
         },
@@ -314,7 +337,9 @@ pub fn main() -> Result<()> {
             progress,
             progress_keep_open,
             None,
-            move |_progress, out, _err| core::repository::log::log(repository(Mode::Lenient)?, out, pathspec),
+            move |_progress, out, _err| {
+                core::repository::log::log(repository(Mode::Lenient)?, out, pathspec)
+            },
         ),
         Subcommands::Worktree(crate::plumbing::options::worktree::Platform { cmd }) => match cmd {
             crate::plumbing::options::worktree::SubCommands::List => prepare_and_run(
@@ -324,7 +349,9 @@ pub fn main() -> Result<()> {
                 progress,
                 progress_keep_open,
                 None,
-                move |_progress, out, _err| core::repository::worktree::list(repository(Mode::Lenient)?, out, format),
+                move |_progress, out, _err| {
+                    core::repository::worktree::list(repository(Mode::Lenient)?, out, format)
+                },
             ),
         },
         Subcommands::IsClean | Subcommands::IsChanged => {
@@ -430,38 +457,49 @@ pub fn main() -> Result<()> {
                         statistics,
                         thread_limit: thread_limit.or(cfg!(target_os = "macos").then_some(3)), // TODO: make this a configurable when in `gix`, this seems to be optimal on MacOS, linux scales though! MacOS also scales if reading a lot of files for refresh index
                         allow_write: !no_write,
-                        index_worktree_renames: index_worktree_renames.map(|percentage| percentage.unwrap_or(0.5)),
+                        index_worktree_renames: index_worktree_renames
+                            .map(|percentage| percentage.unwrap_or(0.5)),
                         submodules: submodules.map(|submodules| match submodules {
                             Submodules::All => core::repository::status::Submodules::All,
-                            Submodules::RefChange => core::repository::status::Submodules::RefChange,
-                            Submodules::Modifications => core::repository::status::Submodules::Modifications,
+                            Submodules::RefChange => {
+                                core::repository::status::Submodules::RefChange
+                            }
+                            Submodules::Modifications => {
+                                core::repository::status::Submodules::Modifications
+                            }
                             Submodules::None => core::repository::status::Submodules::None,
                         }),
                     },
                 )
             },
         ),
-        Subcommands::Submodule(platform) => match platform
-            .cmds
-            .unwrap_or(crate::plumbing::options::submodule::Subcommands::List { dirty_suffix: None })
-        {
-            crate::plumbing::options::submodule::Subcommands::List { dirty_suffix } => prepare_and_run(
-                "submodule-list",
-                trace,
-                verbose,
-                progress,
-                progress_keep_open,
-                None,
-                move |_progress, out, _err| {
-                    core::repository::submodule::list(
-                        repository(Mode::Lenient)?,
-                        out,
-                        format,
-                        dirty_suffix.map(|suffix| suffix.unwrap_or_else(|| "dirty".to_string())),
+        Subcommands::Submodule(platform) => {
+            match platform
+                .cmds
+                .unwrap_or(crate::plumbing::options::submodule::Subcommands::List {
+                    dirty_suffix: None,
+                }) {
+                crate::plumbing::options::submodule::Subcommands::List { dirty_suffix } => {
+                    prepare_and_run(
+                        "submodule-list",
+                        trace,
+                        verbose,
+                        progress,
+                        progress_keep_open,
+                        None,
+                        move |_progress, out, _err| {
+                            core::repository::submodule::list(
+                                repository(Mode::Lenient)?,
+                                out,
+                                format,
+                                dirty_suffix
+                                    .map(|suffix| suffix.unwrap_or_else(|| "dirty".to_string())),
+                            )
+                        },
                     )
-                },
-            ),
-        },
+                }
+            }
+        }
         #[cfg(feature = "gitoxide-core-tools-archive")]
         Subcommands::Archive(crate::plumbing::options::archive::Platform {
             format,
@@ -501,7 +539,9 @@ pub fn main() -> Result<()> {
                             crate::plumbing::options::archive::Format::Internal => {
                                 gix::worktree::archive::Format::InternalTransientNonPersistable
                             }
-                            crate::plumbing::options::archive::Format::Tar => gix::worktree::archive::Format::Tar,
+                            crate::plumbing::options::archive::Format::Tar => {
+                                gix::worktree::archive::Format::Tar
+                            }
                             crate::plumbing::options::archive::Format::TarGz => {
                                 gix::worktree::archive::Format::TarGz { compression_level }
                             }
@@ -528,7 +568,9 @@ pub fn main() -> Result<()> {
                         db,
                         core::corpus::engine::State {
                             gitoxide_version: option_env!("GIX_VERSION")
-                                .ok_or_else(|| anyhow::anyhow!("GIX_VERSION must be set in build-script"))?
+                                .ok_or_else(|| {
+                                    anyhow::anyhow!("GIX_VERSION must be set in build-script")
+                                })?
                                 .into(),
                             progress,
                             trace_to_progress: trace,
@@ -541,7 +583,9 @@ pub fn main() -> Result<()> {
                             repo_sql_suffix,
                             include_task,
                         } => engine.run(path, thread_limit, dry_run, repo_sql_suffix, include_task),
-                        crate::plumbing::options::corpus::SubCommands::Refresh => engine.refresh(path),
+                        crate::plumbing::options::corpus::SubCommands::Refresh => {
+                            engine.refresh(path)
+                        }
                     }
                 },
             )
@@ -555,7 +599,13 @@ pub fn main() -> Result<()> {
                 progress_keep_open,
                 None,
                 move |_progress, out, _err| {
-                    core::repository::commitgraph::list(repository(Mode::Lenient)?, spec, out, long_hashes, format)
+                    core::repository::commitgraph::list(
+                        repository(Mode::Lenient)?,
+                        spec,
+                        out,
+                        long_hashes,
+                        format,
+                    )
                 },
             )
             .map(|_| ()),
@@ -605,7 +655,9 @@ pub fn main() -> Result<()> {
                 progress,
                 progress_keep_open,
                 core::repository::clone::PROGRESS_RANGE,
-                move |progress, out, err| core::repository::clone(remote, directory, config, progress, out, err, opts),
+                move |progress, out, err| {
+                    core::repository::clone(remote, directory, config, progress, out, err, opts)
+                },
             )
         }
         #[cfg(feature = "gitoxide-core-blocking-client")]
@@ -636,7 +688,13 @@ pub fn main() -> Result<()> {
                 progress_keep_open,
                 core::repository::fetch::PROGRESS_RANGE,
                 move |progress, out, err| {
-                    core::repository::fetch(repository(Mode::LenientWithGitInstallConfig)?, progress, out, err, opts)
+                    core::repository::fetch(
+                        repository(Mode::LenientWithGitInstallConfig)?,
+                        progress,
+                        out,
+                        err,
+                        opts,
+                    )
                 },
             )
         }
@@ -649,7 +707,10 @@ pub fn main() -> Result<()> {
                 credential::Subcommands::Reject => gix::credentials::program::main::Action::Erase,
             },
         ),
-        #[cfg(any(feature = "gitoxide-core-async-client", feature = "gitoxide-core-blocking-client"))]
+        #[cfg(any(
+            feature = "gitoxide-core-async-client",
+            feature = "gitoxide-core-blocking-client"
+        ))]
         Subcommands::Remote(crate::plumbing::options::remote::Platform {
             name,
             cmd,
@@ -782,7 +843,12 @@ pub fn main() -> Result<()> {
                     progress_keep_open,
                     None,
                     move |_progress, _out, _err| {
-                        core::repository::index::from_list(file, index_output_path, force, skip_hash)
+                        core::repository::index::from_list(
+                            file,
+                            index_output_path,
+                            force,
+                            skip_hash,
+                        )
                     },
                 ),
                 free::index::Subcommands::CheckoutExclusive {
@@ -806,7 +872,10 @@ pub fn main() -> Result<()> {
                             progress,
                             &should_interrupt,
                             core::index::checkout_exclusive::Options {
-                                index: core::index::Options { object_hash, format },
+                                index: core::index::Options {
+                                    object_hash,
+                                    format,
+                                },
                                 empty_files,
                                 keep_going,
                                 thread_limit,
@@ -827,7 +896,10 @@ pub fn main() -> Result<()> {
                             out,
                             err,
                             core::index::information::Options {
-                                index: core::index::Options { object_hash, format },
+                                index: core::index::Options {
+                                    object_hash,
+                                    format,
+                                },
                                 extension_details: !no_details,
                             },
                         )
@@ -841,7 +913,14 @@ pub fn main() -> Result<()> {
                     progress_keep_open,
                     None,
                     move |_progress, out, _err| {
-                        core::index::verify(index_path, out, core::index::Options { object_hash, format })
+                        core::index::verify(
+                            index_path,
+                            out,
+                            core::index::Options {
+                                object_hash,
+                                format,
+                            },
+                        )
                     },
                 ),
             },
@@ -880,14 +959,21 @@ pub fn main() -> Result<()> {
                         progress_keep_open,
                         core::pack::create::PROGRESS_RANGE,
                         move |progress, out, _err| {
-                            let input = if has_tips { None } else { stdin_or_bail()?.into() };
+                            let input = if has_tips {
+                                None
+                            } else {
+                                stdin_or_bail()?.into()
+                            };
                             let repository = repository.unwrap_or_else(|| PathBuf::from("."));
                             let context = core::pack::create::Context {
                                 thread_limit,
                                 thin,
-                                nondeterministic_thread_count: nondeterministic_count.then_some(counting_threads),
-                                pack_cache_size_in_bytes: pack_cache_size_mb.unwrap_or(0) * 1_000_000,
-                                object_cache_size_in_bytes: object_cache_size_mb.unwrap_or(0) * 1_000_000,
+                                nondeterministic_thread_count: nondeterministic_count
+                                    .then_some(counting_threads),
+                                pack_cache_size_in_bytes: pack_cache_size_mb.unwrap_or(0)
+                                    * 1_000_000,
+                                object_cache_size_in_bytes: object_cache_size_mb.unwrap_or(0)
+                                    * 1_000_000,
                                 statistics: if statistics { Some(format) } else { None },
                                 out,
                                 expansion: expansion.unwrap_or(if has_tips {
@@ -896,7 +982,14 @@ pub fn main() -> Result<()> {
                                     core::pack::create::ObjectExpansion::None
                                 }),
                             };
-                            core::pack::create(repository, tips, input, output_directory, progress, context)
+                            core::pack::create(
+                                repository,
+                                tips,
+                                input,
+                                output_directory,
+                                progress,
+                                context,
+                            )
                         },
                     )
                 }
@@ -908,8 +1001,12 @@ pub fn main() -> Result<()> {
                     refs,
                     refs_directory,
                 } => {
-                    let (_handle, progress) =
-                        async_util::prepare(verbose, trace, "pack-receive", core::pack::receive::PROGRESS_RANGE);
+                    let (_handle, progress) = async_util::prepare(
+                        verbose,
+                        trace,
+                        "pack-receive",
+                        core::pack::receive::PROGRESS_RANGE,
+                    );
                     let fut = core::pack::receive(
                         protocol,
                         &url,
@@ -1026,40 +1123,49 @@ pub fn main() -> Result<()> {
                     },
                 )
                 .map(|_| ()),
-                free::pack::Subcommands::MultiIndex(free::pack::multi_index::Platform { multi_index_path, cmd }) => {
-                    match cmd {
-                        free::pack::multi_index::Subcommands::Entries => prepare_and_run(
-                            "pack-multi-index-entries",
-                            trace,
-                            verbose,
-                            progress,
-                            progress_keep_open,
-                            core::pack::multi_index::PROGRESS_RANGE,
-                            move |_progress, out, _err| core::pack::multi_index::entries(multi_index_path, format, out),
-                        ),
-                        free::pack::multi_index::Subcommands::Info => prepare_and_run(
-                            "pack-multi-index-info",
-                            trace,
-                            verbose,
-                            progress,
-                            progress_keep_open,
-                            core::pack::multi_index::PROGRESS_RANGE,
-                            move |_progress, out, err| {
-                                core::pack::multi_index::info(multi_index_path, format, out, err)
-                            },
-                        ),
-                        free::pack::multi_index::Subcommands::Verify => prepare_and_run(
-                            "pack-multi-index-verify",
-                            trace,
-                            auto_verbose,
-                            progress,
-                            progress_keep_open,
-                            core::pack::multi_index::PROGRESS_RANGE,
-                            move |progress, _out, _err| {
-                                core::pack::multi_index::verify(multi_index_path, progress, &should_interrupt)
-                            },
-                        ),
-                        free::pack::multi_index::Subcommands::Create { index_paths } => prepare_and_run(
+                free::pack::Subcommands::MultiIndex(free::pack::multi_index::Platform {
+                    multi_index_path,
+                    cmd,
+                }) => match cmd {
+                    free::pack::multi_index::Subcommands::Entries => prepare_and_run(
+                        "pack-multi-index-entries",
+                        trace,
+                        verbose,
+                        progress,
+                        progress_keep_open,
+                        core::pack::multi_index::PROGRESS_RANGE,
+                        move |_progress, out, _err| {
+                            core::pack::multi_index::entries(multi_index_path, format, out)
+                        },
+                    ),
+                    free::pack::multi_index::Subcommands::Info => prepare_and_run(
+                        "pack-multi-index-info",
+                        trace,
+                        verbose,
+                        progress,
+                        progress_keep_open,
+                        core::pack::multi_index::PROGRESS_RANGE,
+                        move |_progress, out, err| {
+                            core::pack::multi_index::info(multi_index_path, format, out, err)
+                        },
+                    ),
+                    free::pack::multi_index::Subcommands::Verify => prepare_and_run(
+                        "pack-multi-index-verify",
+                        trace,
+                        auto_verbose,
+                        progress,
+                        progress_keep_open,
+                        core::pack::multi_index::PROGRESS_RANGE,
+                        move |progress, _out, _err| {
+                            core::pack::multi_index::verify(
+                                multi_index_path,
+                                progress,
+                                &should_interrupt,
+                            )
+                        },
+                    ),
+                    free::pack::multi_index::Subcommands::Create { index_paths } => {
+                        prepare_and_run(
                             "pack-multi-index-create",
                             trace,
                             verbose,
@@ -1075,9 +1181,9 @@ pub fn main() -> Result<()> {
                                     object_hash,
                                 )
                             },
-                        ),
+                        )
                     }
-                }
+                },
                 free::pack::Subcommands::Index(subcommands) => match subcommands {
                     free::pack::index::Subcommands::Create {
                         iteration_mode,
@@ -1174,9 +1280,10 @@ pub fn main() -> Result<()> {
                             spec,
                             format,
                             long_hashes,
-                            text: svg.map_or(core::repository::revision::list::Format::Text, |path| {
-                                core::repository::revision::list::Format::Svg { path }
-                            }),
+                            text: svg
+                                .map_or(core::repository::revision::list::Format::Text, |path| {
+                                    core::repository::revision::list::Format::Svg { path }
+                                }),
                         },
                     )
                 },
@@ -1189,7 +1296,11 @@ pub fn main() -> Result<()> {
                 progress_keep_open,
                 None,
                 move |_progress, out, _err| {
-                    core::repository::revision::previous_branches(repository(Mode::Lenient)?, out, format)
+                    core::repository::revision::previous_branches(
+                        repository(Mode::Lenient)?,
+                        out,
+                        format,
+                    )
                 },
             ),
             revision::Subcommands::Explain { spec } => prepare_and_run(
@@ -1226,7 +1337,9 @@ pub fn main() -> Result<()> {
                             cat_file,
                             show_reference: reference,
                             tree_mode: match tree_mode {
-                                revision::resolve::TreeMode::Raw => core::repository::revision::resolve::TreeMode::Raw,
+                                revision::resolve::TreeMode::Raw => {
+                                    core::repository::revision::resolve::TreeMode::Raw
+                                }
                                 revision::resolve::TreeMode::Pretty => {
                                     core::repository::revision::resolve::TreeMode::Pretty
                                 }
@@ -1257,7 +1370,9 @@ pub fn main() -> Result<()> {
             progress,
             progress_keep_open,
             None,
-            move |_progress, out, _err| core::repository::cat(repository(Mode::Lenient)?, &revspec, out),
+            move |_progress, out, _err| {
+                core::repository::cat(repository(Mode::Lenient)?, &revspec, out)
+            },
         ),
         Subcommands::Commit(cmd) => match cmd {
             commit::Subcommands::Verify { rev_spec } => prepare_and_run(
@@ -1268,7 +1383,10 @@ pub fn main() -> Result<()> {
                 progress_keep_open,
                 None,
                 move |_progress, _out, _err| {
-                    core::repository::commit::verify(repository(Mode::Lenient)?, rev_spec.as_deref())
+                    core::repository::commit::verify(
+                        repository(Mode::Lenient)?,
+                        rev_spec.as_deref(),
+                    )
                 },
             ),
             commit::Subcommands::Describe {
@@ -1302,7 +1420,8 @@ pub fn main() -> Result<()> {
                             statistics,
                             max_candidates,
                             always,
-                            dirty_suffix: dirty_suffix.map(|suffix| suffix.unwrap_or_else(|| "dirty".to_string())),
+                            dirty_suffix: dirty_suffix
+                                .map(|suffix| suffix.unwrap_or_else(|| "dirty".to_string())),
                         },
                     )
                 },
@@ -1351,7 +1470,9 @@ pub fn main() -> Result<()> {
             ),
         },
         Subcommands::Odb(cmd) => match cmd {
-            odb::Subcommands::Stats { extra_header_lookup } => prepare_and_run(
+            odb::Subcommands::Stats {
+                extra_header_lookup,
+            } => prepare_and_run(
                 "odb-stats",
                 trace,
                 auto_verbose,
@@ -1379,7 +1500,9 @@ pub fn main() -> Result<()> {
                 progress,
                 progress_keep_open,
                 None,
-                move |_progress, out, _err| core::repository::odb::entries(repository(Mode::Strict)?, format, out),
+                move |_progress, out, _err| {
+                    core::repository::odb::entries(repository(Mode::Strict)?, format, out)
+                },
             ),
             odb::Subcommands::Info => prepare_and_run(
                 "odb-info",
@@ -1388,7 +1511,9 @@ pub fn main() -> Result<()> {
                 progress,
                 progress_keep_open,
                 None,
-                move |_progress, out, err| core::repository::odb::info(repository(Mode::Strict)?, format, out, err),
+                move |_progress, out, err| {
+                    core::repository::odb::info(repository(Mode::Strict)?, format, out, err)
+                },
             ),
         },
         Subcommands::Fsck(fsck::Platform { spec }) => prepare_and_run(
@@ -1398,7 +1523,9 @@ pub fn main() -> Result<()> {
             progress,
             progress_keep_open,
             None,
-            move |_progress, out, _err| core::repository::fsck(repository(Mode::Strict)?, spec, out),
+            move |_progress, out, _err| {
+                core::repository::fsck(repository(Mode::Strict)?, spec, out)
+            },
         ),
         Subcommands::Mailmap(cmd) => match cmd {
             mailmap::Subcommands::Entries => prepare_and_run(
@@ -1420,12 +1547,21 @@ pub fn main() -> Result<()> {
                 progress_keep_open,
                 None,
                 move |_progress, out, err| {
-                    core::repository::mailmap::check(repository(Mode::Lenient)?, format, contacts, out, err)
+                    core::repository::mailmap::check(
+                        repository(Mode::Lenient)?,
+                        format,
+                        contacts,
+                        out,
+                        err,
+                    )
                 },
             ),
         },
         Subcommands::Attributes(cmd) => match cmd {
-            attributes::Subcommands::Query { statistics, pathspec } => prepare_and_run(
+            attributes::Subcommands::Query {
+                statistics,
+                pathspec,
+            } => prepare_and_run(
                 "attributes-query",
                 trace,
                 verbose,
@@ -1436,7 +1572,10 @@ pub fn main() -> Result<()> {
                     let repo = repository(Mode::Strict)?;
                     let pathspecs = if pathspec.is_empty() {
                         PathsOrPatterns::Paths(Box::new(
-                            stdin_or_bail()?.byte_lines().filter_map(Result::ok).map(BString::from),
+                            stdin_or_bail()?
+                                .byte_lines()
+                                .filter_map(Result::ok)
+                                .map(BString::from),
                         ))
                     } else {
                         PathsOrPatterns::Patterns(pathspec)
@@ -1450,7 +1589,10 @@ pub fn main() -> Result<()> {
                     )
                 },
             ),
-            attributes::Subcommands::ValidateBaseline { statistics, no_ignore } => prepare_and_run(
+            attributes::Subcommands::ValidateBaseline {
+                statistics,
+                no_ignore,
+            } => prepare_and_run(
                 "attributes-validate-baseline",
                 trace,
                 auto_verbose,
@@ -1460,9 +1602,12 @@ pub fn main() -> Result<()> {
                 move |progress, out, err| {
                     core::repository::attributes::validate_baseline(
                         repository(Mode::StrictWithGitInstallConfig)?,
-                        stdin_or_bail()
-                            .ok()
-                            .map(|stdin| stdin.byte_lines().filter_map(Result::ok).map(gix::bstr::BString::from)),
+                        stdin_or_bail().ok().map(|stdin| {
+                            stdin
+                                .byte_lines()
+                                .filter_map(Result::ok)
+                                .map(gix::bstr::BString::from)
+                        }),
                         progress,
                         out,
                         err,
@@ -1492,7 +1637,10 @@ pub fn main() -> Result<()> {
                     let repo = repository(Mode::Strict)?;
                     let pathspecs = if pathspec.is_empty() {
                         PathsOrPatterns::Paths(Box::new(
-                            stdin_or_bail()?.byte_lines().filter_map(Result::ok).map(BString::from),
+                            stdin_or_bail()?
+                                .byte_lines()
+                                .filter_map(Result::ok)
+                                .map(BString::from),
                         ))
                     } else {
                         PathsOrPatterns::Patterns(pathspec)
