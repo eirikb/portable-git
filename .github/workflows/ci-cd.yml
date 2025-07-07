@@ -80,6 +80,24 @@ jobs:
           echo "should-release=$SHOULD_RELEASE" >> $GITHUB_OUTPUT
           echo "new-version=$NEW_VERSION" >> $GITHUB_OUTPUT
           echo "Result: $CURRENT_VERSION → $NEW_VERSION (release: $SHOULD_RELEASE)"
+          
+          # Update Cargo.toml with new version if releasing
+          if [ "$SHOULD_RELEASE" = "true" ]; then
+            echo "Updating Cargo.toml to version $NEW_VERSION"
+            sed -i "s/version = \"0.0.0-dev\"/version = \"$NEW_VERSION\"/" Cargo.toml
+            
+            # Upload the updated Cargo.toml as artifact
+            mkdir -p release-artifacts
+            cp Cargo.toml release-artifacts/
+          fi
+
+      - name: Upload versioned Cargo.toml
+        if: steps.version.outputs.should-release == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: cargo-toml-versioned
+          path: release-artifacts/Cargo.toml
+          retention-days: 1
 
   check:
     name: Check
@@ -171,12 +189,12 @@ jobs:
         with:
           targets: ${{ matrix.target }}
 
-      - name: Update version for release
-        if: github.event_name == 'push' && needs.calculate-version.outputs.should-release == 'true'
-        run: |
-          NEW_VERSION="${{ needs.calculate-version.outputs.new-version }}"
-          echo "Updating Cargo.toml version to $NEW_VERSION"
-          sed -i 's/version = "0.0.0-dev"/version = "'$NEW_VERSION'"/' Cargo.toml
+      - name: Download versioned Cargo.toml if available
+        uses: actions/download-artifact@v4
+        with:
+          name: cargo-toml-versioned
+          path: .
+        continue-on-error: true
 
       - name: Cache Rust dependencies
         uses: Swatinem/rust-cache@v2
