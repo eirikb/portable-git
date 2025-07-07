@@ -25,28 +25,19 @@ jobs:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Calculate Version from PR Title
+      - name: Calculate Version from Commit Message
         id: version
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # Try to find the PR that was merged with this commit
-          COMMIT_SHA="${{ github.sha }}"
-          echo "Looking for PR merged with commit: $COMMIT_SHA"
+          # Use commit message (which is PR title for squash merges)
+          COMMIT_MSG="${{ github.event.head_commit.message }}"
           
-          # Search for merged PRs that include this commit
-          PR_NUMBER=$(gh pr list --state merged --limit 20 --json number,mergeCommit \
-            --jq ".[] | select(.mergeCommit.oid == \"$COMMIT_SHA\") | .number" || echo "")
+          # Extract just the title part (before any PR number)
+          # e.g. "feat: add dark mode (#123)" -> "feat: add dark mode"
+          PR_TITLE=$(echo "$COMMIT_MSG" | sed 's/ (#[0-9]\+)$//')
           
-          if [ -n "$PR_NUMBER" ]; then
-            # Get the actual PR title
-            PR_TITLE=$(gh pr view "$PR_NUMBER" --json title --jq '.title')
-            echo "Found merged PR #$PR_NUMBER: $PR_TITLE"
-          else
-            # Fallback to commit message for direct pushes
-            PR_TITLE="${{ github.event.head_commit.message }}"
-            echo "No PR found, using commit message: $PR_TITLE"
-          fi
+          echo "Using title for versioning: $PR_TITLE"
           
           # Get latest release version
           LATEST=$(gh release list --limit 1 --json tagName -q '.[0].tagName' 2>/dev/null || echo "")
