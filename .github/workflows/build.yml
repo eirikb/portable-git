@@ -2,7 +2,10 @@ name: Build
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main,
+                # TODO:
+                feature/*,
+    ]
   pull_request:
     branches: [ main ]
   release:
