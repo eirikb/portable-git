@@ -454,13 +454,16 @@ pub fn show_progress() -> anyhow::Result<()> {
             fn to_record(key: &dyn gix::config::tree::Key) -> Record {
                 let config = key.logical_name();
                 let note = key.note().map(|note| match note {
-                    gix::config::tree::Note::Deviation(n) | gix::config::tree::Note::Informative(n) => n.to_string(),
+                    gix::config::tree::Note::Deviation(n)
+                    | gix::config::tree::Note::Informative(n) => n.to_string(),
                 });
                 let link = key.link().map(|link| match link {
                     gix::config::tree::Link::FallbackKey(key) => {
                         format!("fallback is '{fallback}'", fallback = key.logical_name())
                     }
-                    gix::config::tree::Link::EnvironmentOverride(name) => format!("overridden by '{name}'"),
+                    gix::config::tree::Link::EnvironmentOverride(name) => {
+                        format!("overridden by '{name}'")
+                    }
                 });
 
                 let deviation = match (note, link) {
@@ -535,7 +538,11 @@ pub fn show_progress() -> anyhow::Result<()> {
     Ok(())
 }
 
-fn write_with_linewrap(stdout: &mut StdoutLock<'_>, text: &str, width: usize) -> Result<(), std::io::Error> {
+fn write_with_linewrap(
+    stdout: &mut StdoutLock<'_>,
+    text: &str,
+    width: usize,
+) -> Result<(), std::io::Error> {
     use std::io::Write;
     let icon_and_config_width = 55;
     let width_after_config = width.saturating_sub(icon_and_config_width);

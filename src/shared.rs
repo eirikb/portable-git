@@ -63,7 +63,8 @@ pub mod pretty {
         trace: bool,
         verbose: bool,
         progress: bool,
-        #[cfg_attr(not(feature = "prodash-render-tui"), allow(unused_variables))] progress_keep_open: bool,
+        #[cfg_attr(not(feature = "prodash-render-tui"), allow(unused_variables))]
+        progress_keep_open: bool,
         range: impl Into<Option<ProgressRange>>,
         run: impl FnOnce(
             progress::DoOrDiscard<prodash::tree::Item>,
@@ -79,17 +80,28 @@ pub mod pretty {
                 let mut stdout_lock = stdout.lock();
                 let stderr = stderr();
                 let mut stderr_lock = stderr.lock();
-                run(progress::DoOrDiscard::from(None), &mut stdout_lock, &mut stderr_lock)
+                run(
+                    progress::DoOrDiscard::from(None),
+                    &mut stdout_lock,
+                    &mut stderr_lock,
+                )
             }
             (true, false) => {
                 let progress = crate::shared::progress_tree(trace);
                 let sub_progress = progress.add_child(name);
 
                 use crate::shared::{self, STANDARD_RANGE};
-                let handle = shared::setup_line_renderer_range(&progress, range.into().unwrap_or(STANDARD_RANGE));
+                let handle = shared::setup_line_renderer_range(
+                    &progress,
+                    range.into().unwrap_or(STANDARD_RANGE),
+                );
 
                 let mut out = Vec::<u8>::new();
-                let res = run(progress::DoOrDiscard::from(Some(sub_progress)), &mut out, &mut stderr());
+                let res = run(
+                    progress::DoOrDiscard::from(Some(sub_progress)),
+                    &mut out,
+                    &mut stderr(),
+                );
                 handle.shutdown_and_wait();
                 std::io::Write::write_all(&mut stdout(), &out)?;
                 res
@@ -128,7 +140,8 @@ pub mod pretty {
                 }
             });
             use tracing_subscriber::layer::SubscriberExt;
-            let subscriber = tracing_subscriber::Registry::default().with(tracing_forest::ForestLayer::from(processor));
+            let subscriber = tracing_subscriber::Registry::default()
+                .with(tracing_forest::ForestLayer::from(processor));
             tracing::subscriber::set_global_default(subscriber)?;
         } else {
             tracing::subscriber::set_global_default(tracing_subscriber::Registry::default())?;
@@ -142,7 +155,8 @@ pub mod pretty {
         trace: bool,
         verbose: bool,
         progress: bool,
-        #[cfg_attr(not(feature = "prodash-render-tui"), allow(unused_variables))] progress_keep_open: bool,
+        #[cfg_attr(not(feature = "prodash-render-tui"), allow(unused_variables))]
+        progress_keep_open: bool,
         range: impl Into<Option<ProgressRange>>,
         run: impl FnOnce(
                 progress::DoOrDiscard<prodash::tree::Item>,
@@ -158,7 +172,11 @@ pub mod pretty {
             (false, false) => {
                 let stdout = stdout();
                 let mut stdout_lock = stdout.lock();
-                run(progress::DoOrDiscard::from(None), &mut stdout_lock, &mut stderr())
+                run(
+                    progress::DoOrDiscard::from(None),
+                    &mut stdout_lock,
+                    &mut stderr(),
+                )
             }
             (true, false) => {
                 use crate::shared::{self, STANDARD_RANGE};
@@ -166,13 +184,21 @@ pub mod pretty {
                 let sub_progress = progress.add_child(name);
                 init_tracing(trace, false, &progress)?;
 
-                let handle = shared::setup_line_renderer_range(&progress, range.into().unwrap_or(STANDARD_RANGE));
+                let handle = shared::setup_line_renderer_range(
+                    &progress,
+                    range.into().unwrap_or(STANDARD_RANGE),
+                );
 
                 let mut out = Vec::<u8>::new();
                 let mut err = Vec::<u8>::new();
 
-                let res = gix::trace::coarse!("run")
-                    .into_scope(|| run(progress::DoOrDiscard::from(Some(sub_progress)), &mut out, &mut err));
+                let res = gix::trace::coarse!("run").into_scope(|| {
+                    run(
+                        progress::DoOrDiscard::from(Some(sub_progress)),
+                        &mut out,
+                        &mut err,
+                    )
+                });
 
                 handle.shutdown_and_wait();
                 std::io::Write::write_all(&mut stdout(), &out)?;
@@ -224,7 +250,11 @@ pub mod pretty {
                         // We know that the printing happens at the end, so this is fine.
                         let mut out = Vec::new();
                         let res = gix::trace::coarse!("run", name = name).into_scope(|| {
-                            run(progress::DoOrDiscard::from(Some(sub_progress)), &mut out, &mut stderr())
+                            run(
+                                progress::DoOrDiscard::from(Some(sub_progress)),
+                                &mut out,
+                                &mut stderr(),
+                            )
                         });
                         tx.send(Event::ComputationDone(res, out)).ok();
                     }
@@ -243,7 +273,9 @@ pub mod pretty {
                             break res;
                         }
                         Err(_err) => match thread.join() {
-                            Ok(()) => unreachable!("BUG: We shouldn't fail to receive unless the thread has panicked"),
+                            Ok(()) => unreachable!(
+                                "BUG: We shouldn't fail to receive unless the thread has panicked"
+                            ),
                             Err(panic) => std::panic::resume_unwind(panic),
                         },
                     }
@@ -288,7 +320,12 @@ mod clap {
     impl builder::TypedValueParser for AsBString {
         type Value = BString;
 
-        fn parse_ref(&self, _cmd: &Command, _arg: Option<&Arg>, value: &OsStr) -> Result<Self::Value, Error> {
+        fn parse_ref(
+            &self,
+            _cmd: &Command,
+            _arg: Option<&Arg>,
+            value: &OsStr,
+        ) -> Result<Self::Value, Error> {
             gix::env::os_str_to_bstring(value).ok_or_else(|| Error::new(ErrorKind::InvalidUtf8))
         }
     }
@@ -299,14 +336,23 @@ mod clap {
     impl builder::TypedValueParser for AsOutputFormat {
         type Value = core::OutputFormat;
 
-        fn parse_ref(&self, cmd: &Command, arg: Option<&Arg>, value: &OsStr) -> Result<Self::Value, Error> {
+        fn parse_ref(
+            &self,
+            cmd: &Command,
+            arg: Option<&Arg>,
+            value: &OsStr,
+        ) -> Result<Self::Value, Error> {
             builder::StringValueParser::new()
                 .try_map(|arg| core::OutputFormat::from_str(&arg))
                 .parse_ref(cmd, arg, value)
         }
 
         fn possible_values(&self) -> Option<Box<dyn Iterator<Item = PossibleValue> + '_>> {
-            Some(Box::new(core::OutputFormat::variants().iter().map(PossibleValue::new)))
+            Some(Box::new(
+                core::OutputFormat::variants()
+                    .iter()
+                    .map(PossibleValue::new),
+            ))
         }
     }
 
@@ -316,7 +362,12 @@ mod clap {
     impl builder::TypedValueParser for AsHashKind {
         type Value = gix::hash::Kind;
 
-        fn parse_ref(&self, cmd: &Command, arg: Option<&Arg>, value: &OsStr) -> Result<Self::Value, Error> {
+        fn parse_ref(
+            &self,
+            cmd: &Command,
+            arg: Option<&Arg>,
+            value: &OsStr,
+        ) -> Result<Self::Value, Error> {
             builder::StringValueParser::new()
                 .try_map(|arg| gix::hash::Kind::from_str(&arg))
                 .parse_ref(cmd, arg, value)
@@ -332,14 +383,21 @@ mod clap {
     #[derive(Clone)]
     pub struct AsPathSpec;
 
-    static PATHSPEC_DEFAULTS: once_cell::sync::Lazy<gix::pathspec::Defaults> = once_cell::sync::Lazy::new(|| {
-        gix::pathspec::Defaults::from_environment(&mut |n| std::env::var_os(n)).unwrap_or_default()
-    });
+    static PATHSPEC_DEFAULTS: once_cell::sync::Lazy<gix::pathspec::Defaults> =
+        once_cell::sync::Lazy::new(|| {
+            gix::pathspec::Defaults::from_environment(&mut |n| std::env::var_os(n))
+                .unwrap_or_default()
+        });
 
     impl TypedValueParser for AsPathSpec {
         type Value = gix::pathspec::Pattern;
 
-        fn parse_ref(&self, cmd: &Command, arg: Option<&Arg>, value: &OsStr) -> Result<Self::Value, Error> {
+        fn parse_ref(
+            &self,
+            cmd: &Command,
+            arg: Option<&Arg>,
+            value: &OsStr,
+        ) -> Result<Self::Value, Error> {
             OsStringValueParser::new()
                 .try_map(|arg| {
                     let arg: &std::path::Path = arg.as_os_str().as_ref();
@@ -355,7 +413,12 @@ mod clap {
     impl TypedValueParser for CheckPathSpec {
         type Value = BString;
 
-        fn parse_ref(&self, cmd: &Command, arg: Option<&Arg>, value: &OsStr) -> Result<Self::Value, Error> {
+        fn parse_ref(
+            &self,
+            cmd: &Command,
+            arg: Option<&Arg>,
+            value: &OsStr,
+        ) -> Result<Self::Value, Error> {
             OsStringValueParser::new()
                 .try_map(|arg| -> Result<_, gix::pathspec::parse::Error> {
                     let arg = gix::path::into_bstr(std::path::PathBuf::from(arg));
@@ -372,18 +435,25 @@ mod clap {
     impl TypedValueParser for ParseRenameFraction {
         type Value = f32;
 
-        fn parse_ref(&self, cmd: &Command, arg: Option<&Arg>, value: &OsStr) -> Result<Self::Value, Error> {
+        fn parse_ref(
+            &self,
+            cmd: &Command,
+            arg: Option<&Arg>,
+            value: &OsStr,
+        ) -> Result<Self::Value, Error> {
             StringValueParser::new()
-                .try_map(|arg: String| -> Result<_, Box<dyn std::error::Error + Send + Sync>> {
-                    if arg.ends_with('%') {
-                        let val = u32::from_str(&arg[..arg.len() - 1])?;
-                        Ok(val as f32 / 100.0)
-                    } else {
-                        let val = u32::from_str(&arg)?;
-                        let num = format!("0.{val}");
-                        Ok(f32::from_str(&num)?)
-                    }
-                })
+                .try_map(
+                    |arg: String| -> Result<_, Box<dyn std::error::Error + Send + Sync>> {
+                        if arg.ends_with('%') {
+                            let val = u32::from_str(&arg[..arg.len() - 1])?;
+                            Ok(val as f32 / 100.0)
+                        } else {
+                            let val = u32::from_str(&arg)?;
+                            let num = format!("0.{val}");
+                            Ok(f32::from_str(&num)?)
+                        }
+                    },
+                )
                 .parse_ref(cmd, arg, value)
         }
     }
@@ -394,7 +464,12 @@ mod clap {
     impl TypedValueParser for AsTime {
         type Value = gix::date::Time;
 
-        fn parse_ref(&self, cmd: &Command, arg: Option<&Arg>, value: &OsStr) -> Result<Self::Value, Error> {
+        fn parse_ref(
+            &self,
+            cmd: &Command,
+            arg: Option<&Arg>,
+            value: &OsStr,
+        ) -> Result<Self::Value, Error> {
             StringValueParser::new()
                 .try_map(|arg| gix::date::parse(&arg, Some(std::time::SystemTime::now())))
                 .parse_ref(cmd, arg, value)
@@ -407,7 +482,12 @@ mod clap {
     impl TypedValueParser for AsPartialRefName {
         type Value = gix::refs::PartialName;
 
-        fn parse_ref(&self, cmd: &Command, arg: Option<&Arg>, value: &OsStr) -> Result<Self::Value, Error> {
+        fn parse_ref(
+            &self,
+            cmd: &Command,
+            arg: Option<&Arg>,
+            value: &OsStr,
+        ) -> Result<Self::Value, Error> {
             AsBString
                 .try_map(gix::refs::PartialName::try_from)
                 .parse_ref(cmd, arg, value)
@@ -420,28 +500,35 @@ mod clap {
     impl TypedValueParser for AsRange {
         type Value = std::ops::RangeInclusive<u32>;
 
-        fn parse_ref(&self, cmd: &Command, arg: Option<&Arg>, value: &OsStr) -> Result<Self::Value, Error> {
+        fn parse_ref(
+            &self,
+            cmd: &Command,
+            arg: Option<&Arg>,
+            value: &OsStr,
+        ) -> Result<Self::Value, Error> {
             StringValueParser::new()
-                .try_map(|arg| -> Result<_, Box<dyn std::error::Error + Send + Sync>> {
-                    let parts = arg.split_once(',');
-                    if let Some((start, end)) = parts {
-                        let start = u32::from_str(start)?;
-                        let end = u32::from_str(end)?;
+                .try_map(
+                    |arg| -> Result<_, Box<dyn std::error::Error + Send + Sync>> {
+                        let parts = arg.split_once(',');
+                        if let Some((start, end)) = parts {
+                            let start = u32::from_str(start)?;
+                            let end = u32::from_str(end)?;
 
-                        if start <= end {
-                            return Ok(start..=end);
+                            if start <= end {
+                                return Ok(start..=end);
+                            }
                         }
-                    }
 
-                    Err(Box::new(Error::new(ErrorKind::ValueValidation)))
-                })
+                        Err(Box::new(Error::new(ErrorKind::ValueValidation)))
+                    },
+                )
                 .parse_ref(cmd, arg, value)
         }
     }
 }
 pub use self::clap::{
-    AsBString, AsHashKind, AsOutputFormat, AsPartialRefName, AsPathSpec, AsRange, AsTime, CheckPathSpec,
-    ParseRenameFraction,
+    AsBString, AsHashKind, AsOutputFormat, AsPartialRefName, AsPathSpec, AsRange, AsTime,
+    CheckPathSpec, ParseRenameFraction,
 };
 
 #[cfg(test)]
@@ -459,7 +546,11 @@ mod value_parser_tests {
         }
 
         let c = Cmd::parse_from(["cmd", "-a"]);
-        assert_eq!(c.arg, Some(None), "this means we need to fill in the default");
+        assert_eq!(
+            c.arg,
+            Some(None),
+            "this means we need to fill in the default"
+        );
 
         let c = Cmd::parse_from(["cmd", "-a=50%"]);
         assert_eq!(c.arg, Some(Some(0.5)), "percentages become a fraction");

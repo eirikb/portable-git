@@ -125,7 +125,10 @@ pub enum Subcommands {
     #[clap(subcommand)]
     Mailmap(mailmap::Subcommands),
     /// Interact with the remote hosts.
-    #[cfg(any(feature = "gitoxide-core-async-client", feature = "gitoxide-core-blocking-client"))]
+    #[cfg(any(
+        feature = "gitoxide-core-async-client",
+        feature = "gitoxide-core-blocking-client"
+    ))]
     Remote(remote::Platform),
     /// Interact with the attribute files like .gitattributes.
     #[clap(subcommand, visible_alias = "attrs")]
@@ -179,7 +182,10 @@ pub enum Subcommands {
         since: Option<gix::date::Time>,
     },
     /// Generate shell completions to stdout or a directory.
-    #[clap(visible_alias = "generate-completions", visible_alias = "shell-completions")]
+    #[clap(
+        visible_alias = "generate-completions",
+        visible_alias = "shell-completions"
+    )]
     Completions {
         /// The shell to generate completions for. Otherwise it's derived from the environment.
         #[clap(long, short)]
@@ -336,7 +342,9 @@ pub mod corpus {
     use std::path::PathBuf;
 
     #[derive(Debug, clap::Parser)]
-    #[command(about = "Run algorithms on a corpus of git repositories and store their results for later analysis")]
+    #[command(
+        about = "Run algorithms on a corpus of git repositories and store their results for later analysis"
+    )]
     pub struct Platform {
         /// The path to the database to read and write depending on the sub-command.
         #[arg(long, default_value = "corpus.db")]
@@ -389,9 +397,15 @@ pub mod merge {
     impl From<ResolveWith> for gix::merge::blob::builtin_driver::text::Conflict {
         fn from(value: ResolveWith) -> Self {
             match value {
-                ResolveWith::Union => gix::merge::blob::builtin_driver::text::Conflict::ResolveWithUnion,
-                ResolveWith::Ours => gix::merge::blob::builtin_driver::text::Conflict::ResolveWithOurs,
-                ResolveWith::Theirs => gix::merge::blob::builtin_driver::text::Conflict::ResolveWithTheirs,
+                ResolveWith::Union => {
+                    gix::merge::blob::builtin_driver::text::Conflict::ResolveWithUnion
+                }
+                ResolveWith::Ours => {
+                    gix::merge::blob::builtin_driver::text::Conflict::ResolveWithOurs
+                }
+                ResolveWith::Theirs => {
+                    gix::merge::blob::builtin_driver::text::Conflict::ResolveWithTheirs
+                }
             }
         }
     }
@@ -715,7 +729,10 @@ pub mod clone {
     }
 }
 
-#[cfg(any(feature = "gitoxide-core-async-client", feature = "gitoxide-core-blocking-client"))]
+#[cfg(any(
+    feature = "gitoxide-core-async-client",
+    feature = "gitoxide-core-blocking-client"
+))]
 pub mod remote {
     #[derive(Debug, clap::Parser)]
     pub struct Platform {
@@ -783,7 +800,9 @@ pub mod clean {
         fn from(value: FindRepository) -> Self {
             match value {
                 FindRepository::All => gitoxide_core::repository::clean::FindRepository::All,
-                FindRepository::NonBare => gitoxide_core::repository::clean::FindRepository::NonBare,
+                FindRepository::NonBare => {
+                    gitoxide_core::repository::clean::FindRepository::NonBare
+                }
             }
         }
     }
