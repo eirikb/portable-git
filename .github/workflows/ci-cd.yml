@@ -25,17 +25,28 @@ jobs:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Calculate Version from Commit Message
+      - name: Calculate Version from PR Title
         id: version
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
         run: |
-          # Use the commit message from the push event
-          # For squash merges, this will be the PR title
-          # For regular pushes, this will be the commit message
-          PR_TITLE="$COMMIT_MESSAGE"
-          echo "Commit message: $PR_TITLE"
+          # Try to find the PR that was merged with this commit
+          COMMIT_SHA="${{ github.sha }}"
+          echo "Looking for PR merged with commit: $COMMIT_SHA"
+          
+          # Search for merged PRs that include this commit
+          PR_NUMBER=$(gh pr list --state merged --limit 20 --json number,mergeCommit \
+            --jq ".[] | select(.mergeCommit.oid == \"$COMMIT_SHA\") | .number" || echo "")
+          
+          if [ -n "$PR_NUMBER" ]; then
+            # Get the actual PR title
+            PR_TITLE=$(gh pr view "$PR_NUMBER" --json title --jq '.title')
+            echo "Found merged PR #$PR_NUMBER: $PR_TITLE"
+          else
+            # Fallback to commit message for direct pushes
+            PR_TITLE="${{ github.event.head_commit.message }}"
+            echo "No PR found, using commit message: $PR_TITLE"
+          fi
           
           # Get latest release version
           LATEST=$(gh release list --limit 1 --json tagName -q '.[0].tagName' 2>/dev/null || echo "")
