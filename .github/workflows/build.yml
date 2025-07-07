@@ -2,10 +2,7 @@ name: Build
 
 on:
   push:
-    branches: [ main,
-                # TODO:
-                feature/eirikb/build,
-    ]
+    branches: [ main ]
   pull_request:
     branches: [ main ]
   release:
