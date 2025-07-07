@@ -121,15 +121,6 @@ Options:
           Print help (see a summary with '-h')
 ```
 
-### Example Commands
-
-- **Check repository status**: `git status`
-- **View commit history**: `git log`
-- **Compare changes**: `git diff`
-- **Verify repository integrity**: `git verify`
-- **Clone a repository**: `git clone <url>`
-- **Get help for any command**: `git <command> --help`
-
 ## Attribution
 
 This project incorporates significant code from [GitoxideLabs/gitoxide](https://github.com/GitoxideLabs/gitoxide). See
