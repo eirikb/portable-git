@@ -5,16 +5,95 @@ on:
     branches: [ main ]
   pull_request:
     branches: [ main ]
-  release:
-    types: [ published ]
 
 env:
   CARGO_TERM_COLOR: always
 
 jobs:
+  # Semantic-release from Wish!
+  calculate-version:
+    name: Calculate Version
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    outputs:
+      should-release: ${{ steps.version.outputs.should-release }}
+      new-version: ${{ steps.version.outputs.new-version }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Calculate Version from PR Title
+        id: version
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Get the merge commit message (contains PR title)
+          COMMIT_MSG=$(git log -1 --pretty=%s)
+          echo "Commit message: $COMMIT_MSG"
+          
+          # Extract PR title from merge commit (format: "Merge pull request #123 from branch")
+          # Look for PR title in commit body or use commit message directly
+          PR_TITLE=""
+          if [[ "$COMMIT_MSG" =~ ^Merge\ pull\ request ]]; then
+            # Get PR title from commit body
+            PR_TITLE=$(git log -1 --pretty=%b | head -1)
+          else
+            # Direct push, use commit message
+            PR_TITLE="$COMMIT_MSG"
+          fi
+          
+          echo "PR/Commit title: $PR_TITLE"
+          
+          # Get latest release version
+          LATEST=$(gh release list --limit 1 --json tagName -q '.[0].tagName' 2>/dev/null || echo "")
+          if [ -z "$LATEST" ]; then
+            CURRENT_VERSION="0.0.0"
+          else
+            CURRENT_VERSION=${LATEST#v}  # Remove 'v' prefix
+          fi
+          
+          echo "Current version: $CURRENT_VERSION"
+          
+          # Parse current version
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT_VERSION"
+          
+          # Determine bump type from PR title
+          SHOULD_RELEASE=false
+          NEW_VERSION="$CURRENT_VERSION"
+          
+          case "$PR_TITLE" in
+            feat!:*|fix!:*|*"BREAKING CHANGE"*)
+              NEW_VERSION="$((MAJOR + 1)).0.0"
+              SHOULD_RELEASE=true
+              echo "Breaking change detected → major bump"
+              ;;
+            feat:*)
+              NEW_VERSION="$MAJOR.$((MINOR + 1)).0"  
+              SHOULD_RELEASE=true
+              echo "Feature detected → minor bump"
+              ;;
+            fix:*)
+              NEW_VERSION="$MAJOR.$MINOR.$((PATCH + 1))"
+              SHOULD_RELEASE=true
+              echo "Fix detected → patch bump"
+              ;;
+            *)
+              echo "No release needed (chore, docs, etc.)"
+              ;;
+          esac
+          
+          echo "should-release=$SHOULD_RELEASE" >> $GITHUB_OUTPUT
+          echo "new-version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo "Result: $CURRENT_VERSION → $NEW_VERSION (release: $SHOULD_RELEASE)"
+
   build:
     name: Build ${{ matrix.target }}
     runs-on: ${{ matrix.os }}
+    needs: calculate-version
+    if: always() && (github.event_name == 'pull_request' || (github.event_name == 'push' && needs.calculate-version.outputs.should-release == 'true'))
     strategy:
       fail-fast: false
       matrix:
@@ -42,6 +121,13 @@ jobs:
         with:
           targets: ${{ matrix.target }}
 
+      - name: Update version for release
+        if: github.event_name == 'push' && needs.calculate-version.outputs.should-release == 'true'
+        run: |
+          NEW_VERSION="${{ needs.calculate-version.outputs.new-version }}"
+          echo "Updating Cargo.toml version to $NEW_VERSION"
+          sed -i 's/version = "0.0.0-dev"/version = "'$NEW_VERSION'"/' Cargo.toml
+
       - name: Cache Rust dependencies
         uses: actions/cache@v4
         with:
@@ -63,26 +149,41 @@ jobs:
       - name: Copy binary (Unix)
         if: "!contains(matrix.os, 'windows')"
         run: |
-          cp target/${{ matrix.target }}/release/git artifacts/git-${{ matrix.name }}
-          chmod +x artifacts/git-${{ matrix.name }}
+          if [ "${{ github.event_name }}" = "push" ] && [ "${{ needs.calculate-version.outputs.should-release }}" = "true" ]; then
+            FILENAME="git-${{ matrix.name }}-v${{ needs.calculate-version.outputs.new-version }}"
+          else
+            FILENAME="git-${{ matrix.name }}"
+          fi
+          cp target/${{ matrix.target }}/release/git artifacts/$FILENAME
+          chmod +x artifacts/$FILENAME
 
       - name: Copy binary (Windows)
         if: contains(matrix.os, 'windows')
+        shell: cmd
         run: |
-          copy target/${{ matrix.target }}/release/git${{ matrix.ext }} artifacts/git-${{ matrix.name }}${{ matrix.ext }}
+          if "${{ github.event_name }}" == "push" (
+            if "${{ needs.calculate-version.outputs.should-release }}" == "true" (
+              set "FILENAME=git-${{ matrix.name }}-v${{ needs.calculate-version.outputs.new-version }}${{ matrix.ext }}"
+            ) else (
+              set "FILENAME=git-${{ matrix.name }}${{ matrix.ext }}"
+            )
+          ) else (
+            set "FILENAME=git-${{ matrix.name }}${{ matrix.ext }}"
+          )
+          copy target/${{ matrix.target }}/release/git${{ matrix.ext }} artifacts\%FILENAME%
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: git-${{ matrix.name }}
-          path: artifacts/git-${{ matrix.name }}${{ matrix.ext }}
+          path: artifacts/*
           retention-days: 30
 
   release:
     name: Create Release
     runs-on: ubuntu-latest
-    needs: build
-    if: github.event_name == 'release'
+    needs: [ calculate-version, build ]
+    if: github.event_name == 'push' && needs.calculate-version.outputs.should-release == 'true'
     
     steps:
       - name: Download all artifacts
@@ -96,11 +197,15 @@ jobs:
           find . -name "git-*" -type f -exec sha256sum {} \; > checksums.txt
           cat checksums.txt
 
-      - name: Upload release assets
-        uses: softprops/action-gh-release@v2
-        with:
-          files: |
-            artifacts/*/git-*
-            artifacts/checksums.txt
+      - name: Create Release
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION="${{ needs.calculate-version.outputs.new-version }}"
+          
+          # Create release with all artifacts
+          gh release create "v$VERSION" \
+            --title "v$VERSION" \
+            --generate-notes \
+            artifacts/*/git-* \
+            artifacts/checksums.txt
