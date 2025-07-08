@@ -3,4 +3,5 @@
 // Modifications: Minor - removed porcelain module, stripped documentation and attributes
 
 pub mod plumbing;
+pub mod porcelain;
 pub mod shared;

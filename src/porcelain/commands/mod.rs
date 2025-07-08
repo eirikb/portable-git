@@ -1,0 +1,13 @@
+pub mod blame;
+pub mod cat_file;
+pub mod clone;
+pub mod config;
+pub mod diff;
+pub mod fetch;
+pub mod fsck;
+pub mod init;
+pub mod log;
+pub mod ls_files;
+pub mod merge;
+pub mod remote;
+pub mod status;

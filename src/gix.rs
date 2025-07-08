@@ -3,5 +3,5 @@
 // Modifications: Minimal - removed feature flags, updated crate name reference
 
 fn main() -> anyhow::Result<()> {
-    portable_git::plumbing::main()
+    portable_git::porcelain::main()
 }
