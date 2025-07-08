@@ -1,9 +1,9 @@
 use anyhow::Result;
 use gitoxide_core as core;
-use std::path::PathBuf;
+use std::path::Path;
 
 pub fn run(
-    _repository: &PathBuf,
+    _repository: &Path,
     cached: bool,
     deleted: bool,
     modified: bool,

@@ -26,15 +26,13 @@ pub fn run(pathspec: Vec<PathBuf>, cached: bool) -> Result<()> {
         let empty_tree = "4b825dc642cb6eb9a060e54bf8d69288fbee4904";
 
         core::repository::diff::tree(repo, &mut out, head_tree.into(), empty_tree.into())?;
+    } else if pathspec.is_empty() {
+        println!("Working tree diff not yet fully implemented");
+        println!("Use 'git status' to see changed files");
     } else {
-        if pathspec.is_empty() {
-            println!("Working tree diff not yet fully implemented");
-            println!("Use 'git status' to see changed files");
-        } else {
-            println!("Working tree diff for specific paths not yet implemented");
-            for path in &pathspec {
-                println!("Would show diff for: {}", path.display());
-            }
+        println!("Working tree diff for specific paths not yet implemented");
+        for path in &pathspec {
+            println!("Would show diff for: {}", path.display());
         }
     }
 

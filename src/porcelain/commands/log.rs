@@ -15,11 +15,7 @@ pub fn run(max_count: Option<usize>, oneline: bool, graph: bool) -> Result<()> {
 
     let spec = std::ffi::OsString::from("HEAD");
 
-    let format = if oneline || graph {
-        core::OutputFormat::Human
-    } else {
-        core::OutputFormat::Human
-    };
+    let format = core::OutputFormat::Human;
 
     if oneline || graph {
         let head = match repo.head_commit() {

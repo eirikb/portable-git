@@ -1,9 +1,9 @@
 use anyhow::Result;
 use gitoxide_core as core;
-use std::path::PathBuf;
+use std::path::Path;
 
 pub fn run(
-    _repository: &PathBuf,
+    _repository: &Path,
     file: String,
     statistics: bool,
     ranges: Vec<std::ops::RangeInclusive<u32>>,

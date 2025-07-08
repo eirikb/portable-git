@@ -1,8 +1,8 @@
 use anyhow::Result;
-use std::path::PathBuf;
+use std::path::Path;
 
 pub fn run(
-    _repository: &PathBuf,
+    _repository: &Path,
     key: Option<String>,
     value: Option<String>,
     _global: bool,

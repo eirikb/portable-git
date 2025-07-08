@@ -1,8 +1,8 @@
 use anyhow::Result;
-use std::path::PathBuf;
+use std::path::Path;
 
 pub fn run(
-    _repository: &PathBuf,
+    _repository: &Path,
     commits: Vec<String>,
     message: Option<String>,
     no_commit: bool,

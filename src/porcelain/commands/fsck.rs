@@ -1,8 +1,8 @@
 use anyhow::Result;
 use gitoxide_core as core;
-use std::path::PathBuf;
+use std::path::Path;
 
-pub fn run(_repository: &PathBuf, spec: Option<String>, verbose: bool) -> Result<()> {
+pub fn run(_repository: &Path, spec: Option<String>, verbose: bool) -> Result<()> {
     let repo = match gix::discover(".") {
         Ok(repo) => repo,
         Err(_) => {

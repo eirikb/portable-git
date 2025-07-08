@@ -1,9 +1,9 @@
 use anyhow::Result;
 use gitoxide_core as core;
 use gix::bstr::{BString, ByteSlice};
-use std::path::PathBuf;
+use std::path::Path;
 
-pub fn run(_repository: &PathBuf, short: bool, untracked_files: bool) -> Result<()> {
+pub fn run(_repository: &Path, short: bool, untracked_files: bool) -> Result<()> {
     let repo = match gix::discover(".") {
         Ok(repo) => repo,
         Err(_) => {

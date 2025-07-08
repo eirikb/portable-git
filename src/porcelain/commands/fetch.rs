@@ -1,10 +1,10 @@
 use anyhow::Result;
 use gitoxide_core as core;
 use gix::bstr::BString;
-use std::path::PathBuf;
+use std::path::Path;
 
 pub fn run(
-    _repository: &PathBuf,
+    _repository: &Path,
     remote: Option<String>,
     refspecs: Vec<BString>,
     dry_run: bool,

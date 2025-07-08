@@ -1,7 +1,7 @@
 use anyhow::Result;
-use std::path::PathBuf;
+use std::path::Path;
 
-pub fn run(_repository: &PathBuf, command: crate::porcelain::RemoteCommands) -> Result<()> {
+pub fn run(_repository: &Path, command: crate::porcelain::RemoteCommands) -> Result<()> {
     let repo = match gix::discover(".") {
         Ok(repo) => repo,
         Err(_) => {
