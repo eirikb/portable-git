@@ -211,17 +211,30 @@ jobs:
       - name: Create artifact directory
         run: mkdir -p artifacts
 
-      - name: Copy binary
+      - name: Prepare archive
         shell: bash
         run: |
-          if [ "${{ github.event_name }}" = "push" ] && [ "${{ needs.calculate-version.outputs.should-release }}" = "true" ]; then
-            FILENAME="git-${{ matrix.name }}-v${{ needs.calculate-version.outputs.new-version }}${{ matrix.ext }}"
-          else
-            FILENAME="git-${{ matrix.name }}${{ matrix.ext }}"
-          fi
-          cp target/${{ matrix.target }}/release/git${{ matrix.ext }} artifacts/$FILENAME
+          # Copy binary with standard name (git or git.exe)
+          mkdir -p archive
+          cp target/${{ matrix.target }}/release/git${{ matrix.ext }} archive/git${{ matrix.ext }}
           if [[ "${{ matrix.os }}" != *"windows"* ]]; then
-            chmod +x artifacts/$FILENAME
+            chmod +x archive/git${{ matrix.ext }}
+          fi
+          
+          # Create archive with full descriptive name
+          if [ "${{ github.event_name }}" = "push" ] && [ "${{ needs.calculate-version.outputs.should-release }}" = "true" ]; then
+            ARCHIVE_NAME="portable-git-${{ matrix.name }}-v${{ needs.calculate-version.outputs.new-version }}"
+          else
+            ARCHIVE_NAME="portable-git-${{ matrix.name }}"
+          fi
+          
+          # Create archive based on OS
+          if [[ "${{ matrix.os }}" == *"windows"* ]]; then
+            # Windows: Create ZIP archive
+            cd archive && 7z a ../artifacts/${ARCHIVE_NAME}.zip * && cd ..
+          else
+            # Unix-like: Create tar.gz archive
+            cd archive && tar -czf ../artifacts/${ARCHIVE_NAME}.tar.gz * && cd ..
           fi
 
       - name: Upload artifacts
@@ -250,7 +263,7 @@ jobs:
       - name: Create checksums
         run: |
           cd artifacts
-          find . -name "git-*" -type f -exec sha256sum {} \; > checksums.txt
+          find . -name "portable-git-*" -type f -exec sha256sum {} \; | sed 's|^\./||' > checksums.txt
           cat checksums.txt
 
       - name: Create Release
@@ -259,9 +272,9 @@ jobs:
         run: |
           VERSION="${{ needs.calculate-version.outputs.new-version }}"
           
-          # Create release with all artifacts
+          # Create release with all archives
           gh release create "v$VERSION" \
             --title "v$VERSION" \
             --generate-notes \
-            artifacts/*/git-* \
+            artifacts/*/portable-git-* \
             artifacts/checksums.txt
