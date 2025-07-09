@@ -23,7 +23,7 @@ default = [
     "gitoxide-core-tools-query",
     "gitoxide-core-tools-corpus",
     "gitoxide-core-tools",
-    "http-client-curl",
+    "http-client-reqwest",
     "tracing"
 ]
 
@@ -48,7 +48,7 @@ gitoxide-core-tools-archive = ["gitoxide-core/archive"]
 gitoxide-core-tools-clean = ["gitoxide-core/clean"]
 gitoxide-core-blocking-client = ["gitoxide-core/blocking-client"]
 gitoxide-core-async-client = ["gitoxide-core/async-client", "futures-lite"]
-http-client-curl = ["gix/blocking-http-transport-curl"]
+http-client-reqwest = ["gix/blocking-http-transport-reqwest", "dep:reqwest"]
 small = ["pretty-cli", "prodash-render-line", "is-terminal"]
 
 [dependencies]
@@ -58,7 +58,7 @@ terminal_size = "0.3"
 
 gitoxide-core = { git = "https://github.com/GitoxideLabs/gitoxide.git" }
 gix-features = { git = "https://github.com/GitoxideLabs/gitoxide.git" }
-gix = { git = "https://github.com/GitoxideLabs/gitoxide.git", default-features = false }
+gix = { git = "https://github.com/GitoxideLabs/gitoxide.git", default-features = false, features = ["max-performance", "comfort", "blocking-http-transport-reqwest", "progress-tree"] }
 
 clap = { version = "4.5.40", features = ["derive", "cargo"] }
 clap_complete = "4.5.54"
@@ -72,3 +72,7 @@ futures-lite = { version = "2.1.0", optional = true }
 tracing-forest = { version = "0.1.5", features = ["serde"], optional = true }
 tracing-subscriber = { version = "0.3.17", optional = true }
 tracing = { version = "0.1.37", optional = true }
+
+# HTTP client with Rust-native TLS and embedded CA certificates
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls"], optional = true }
+webpki-roots = "0.25"
