@@ -193,6 +193,13 @@ jobs:
         with:
           targets: ${{ matrix.target }}
 
+      - name: Setup build environment
+        if: matrix.target == 'x86_64-unknown-linux-musl'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y musl-dev musl-tools
+          echo "CC=musl-gcc" >> $GITHUB_ENV
+
       - name: Download versioned Cargo.toml if available
         uses: actions/download-artifact@v4
         with:
