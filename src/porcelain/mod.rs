@@ -211,9 +211,9 @@ pub enum Commands {
     /// Manage set of tracked repositories
     #[clap(display_order = 16)]
     Remote {
-        /// Remote subcommand
-        #[clap(subcommand)]
-        command: RemoteCommands,
+        /// Show remote url after name
+        #[clap(short, long)]
+        verbose: bool,
     },
 
     /// Access to low-level plumbing commands
@@ -222,13 +222,6 @@ pub enum Commands {
         #[clap(subcommand)]
         command: PlumbingCommands,
     },
-}
-
-#[derive(Debug, Subcommand)]
-pub enum RemoteCommands {
-    /// Show remote repositories
-    #[clap(visible_alias = "show")]
-    List,
 }
 
 #[derive(Debug, Subcommand)]
@@ -302,7 +295,7 @@ pub fn main() -> Result<()> {
             ff_only,
         } => commands::merge::run(&args.repository, commits, message, no_commit, ff_only),
         Commands::Fsck { spec, verbose } => commands::fsck::run(&args.repository, spec, verbose),
-        Commands::Remote { command } => commands::remote::run(&args.repository, command),
+        Commands::Remote { verbose } => commands::remote::run(&args.repository, verbose),
         Commands::Plumbing { command } => match command {
             PlumbingCommands::External(_args) => crate::plumbing::main(),
         },
