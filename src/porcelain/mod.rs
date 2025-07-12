@@ -248,6 +248,15 @@ pub enum PlumbingCommands {
 }
 
 pub fn main() -> Result<()> {
+    let should_interrupt = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
+    #[allow(unsafe_code)]
+    unsafe {
+        gix::interrupt::init_handler(1, {
+            let should_interrupt = std::sync::Arc::clone(&should_interrupt);
+            move || should_interrupt.store(true, std::sync::atomic::Ordering::SeqCst)
+        })?;
+    }
+
     let args = Args::parse();
 
     match args.command {
