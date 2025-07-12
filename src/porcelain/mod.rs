@@ -216,6 +216,22 @@ pub enum Commands {
         verbose: bool,
     },
 
+    /// Reset current HEAD to the specified state
+    #[clap(display_order = 17)]
+    Reset {
+        /// Commit to reset to
+        commit: Option<String>,
+        /// Keep HEAD at same commit but reset index (default)
+        #[clap(long, conflicts_with_all = &["soft", "hard"])]
+        mixed: bool,
+        /// Only reset HEAD
+        #[clap(long, conflicts_with_all = &["mixed", "hard"])]
+        soft: bool,
+        /// Reset HEAD, index, and working tree
+        #[clap(long, conflicts_with_all = &["soft", "mixed"])]
+        hard: bool,
+    },
+
     /// Access to low-level plumbing commands
     #[clap(display_order = 100, hide = true)]
     Plumbing {
@@ -296,6 +312,21 @@ pub fn main() -> Result<()> {
         } => commands::merge::run(&args.repository, commits, message, no_commit, ff_only),
         Commands::Fsck { spec, verbose } => commands::fsck::run(&args.repository, spec, verbose),
         Commands::Remote { verbose } => commands::remote::run(&args.repository, verbose),
+        Commands::Reset {
+            commit,
+            mixed: _,
+            soft,
+            hard,
+        } => {
+            let mode = if soft {
+                commands::reset::ResetMode::Soft
+            } else if hard {
+                commands::reset::ResetMode::Hard
+            } else {
+                commands::reset::ResetMode::Mixed
+            };
+            commands::reset::run(mode, commit)
+        }
         Commands::Plumbing { command } => match command {
             PlumbingCommands::External(_args) => crate::plumbing::main(),
         },

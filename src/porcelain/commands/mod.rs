@@ -10,4 +10,5 @@ pub mod log;
 pub mod ls_files;
 pub mod merge;
 pub mod remote;
+pub mod reset;
 pub mod status;
