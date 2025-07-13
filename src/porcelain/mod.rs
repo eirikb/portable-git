@@ -58,8 +58,47 @@ pub enum Commands {
         bare: bool,
     },
 
-    /// Show changes between commits, commit and working tree, etc
+    /// Add file contents to the index
+    #[clap(display_order = 3)]
+    Add {
+        /// Files to add to the index
+        pathspec: Vec<PathBuf>,
+        /// Add all modified and deleted files
+        #[clap(short = 'A', long)]
+        all: bool,
+        /// Add changes from all tracked and untracked files
+        #[clap(short = 'a', long)]
+        update: bool,
+        /// Allow adding otherwise ignored files
+        #[clap(short = 'f', long)]
+        force: bool,
+        /// Don't actually add the files, just show what would be done
+        #[clap(short = 'n', long)]
+        dry_run: bool,
+    },
+
+    /// Record changes to the repository
     #[clap(display_order = 4)]
+    Commit {
+        /// Use the given message as the commit message
+        #[clap(short = 'm', long)]
+        message: Option<String>,
+        /// Automatically stage files that have been modified and deleted
+        #[clap(short = 'a', long)]
+        all: bool,
+        /// Replace the tip of the current branch by creating a new commit
+        #[clap(long)]
+        amend: bool,
+        /// Allow empty commits
+        #[clap(long)]
+        allow_empty: bool,
+        /// Override the commit author
+        #[clap(long)]
+        author: Option<String>,
+    },
+
+    /// Show changes between commits, commit and working tree, etc
+    #[clap(display_order = 5)]
     Diff {
         /// Files to compare
         pathspec: Vec<PathBuf>,
@@ -72,7 +111,7 @@ pub enum Commands {
     },
 
     /// Show commit logs
-    #[clap(display_order = 5)]
+    #[clap(display_order = 6)]
     Log {
         /// Number of commits to show
         #[clap(short = 'n', long)]
@@ -86,7 +125,7 @@ pub enum Commands {
     },
 
     /// Show the working tree status
-    #[clap(display_order = 6)]
+    #[clap(display_order = 7)]
     Status {
         /// Give the output in a short format
         #[clap(short = 's', long)]
@@ -96,8 +135,43 @@ pub enum Commands {
         untracked_files: bool,
     },
 
-    /// Download objects and refs from another repository
+    /// Switch branches or restore working tree files
+    #[clap(display_order = 8)]
+    Checkout {
+        /// The branch or commit to check out
+        branch: Option<String>,
+        /// Create a new branch
+        #[clap(short = 'b', long)]
+        new_branch: Option<String>,
+        /// Force checkout (throw away local modifications)
+        #[clap(short = 'f', long)]
+        force: bool,
+        /// Files to checkout
+        #[clap(last = true)]
+        paths: Vec<PathBuf>,
+    },
+
+    /// List, create, or delete branches
     #[clap(display_order = 9)]
+    Branch {
+        /// Branch name to create
+        branch_name: Option<String>,
+        /// List branches
+        #[clap(short = 'l', long)]
+        list: bool,
+        /// Delete a branch
+        #[clap(short = 'd', long)]
+        delete: Option<String>,
+        /// List remote-tracking branches
+        #[clap(short = 'r', long)]
+        remote: bool,
+        /// Show sha1 and commit subject line for each head
+        #[clap(short = 'v', long)]
+        verbose: bool,
+    },
+
+    /// Download objects and refs from another repository
+    #[clap(display_order = 10)]
     Fetch {
         /// Remote name or URL to fetch from
         remote: Option<String>,
@@ -115,8 +189,86 @@ pub enum Commands {
         all: bool,
     },
 
+    /// Update remote refs along with associated objects
+    #[clap(display_order = 11)]
+    Push {
+        /// Repository to push to
+        remote: Option<String>,
+        /// Refspecs to push
+        #[clap(value_parser = crate::shared::AsBString)]
+        refspecs: Vec<BString>,
+        /// Show what would be done, without making any changes
+        #[clap(long, short = 'n')]
+        dry_run: bool,
+        /// Show additional information
+        #[clap(long, short = 'v')]
+        verbose: bool,
+        /// Force update of remote refs
+        #[clap(long, short = 'f')]
+        force: bool,
+        /// Set up upstream tracking
+        #[clap(long, short = 'u')]
+        set_upstream: bool,
+    },
+
+    /// Fetch from and integrate with another repository or a local branch
+    #[clap(display_order = 12)]
+    Pull {
+        /// Repository to pull from
+        remote: Option<String>,
+        /// Branch to pull
+        branch: Option<String>,
+        /// Show what would be done, without making any changes
+        #[clap(long, short = 'n')]
+        dry_run: bool,
+        /// Show additional information
+        #[clap(long, short = 'v')]
+        verbose: bool,
+        /// Create a merge commit even when fast-forward is possible
+        #[clap(long)]
+        no_ff: bool,
+        /// Only fast-forward merges are allowed
+        #[clap(long)]
+        ff_only: bool,
+        /// Use rebase instead of merge
+        #[clap(long, short = 'r')]
+        rebase: bool,
+    },
+
+    /// Join two or more development histories together
+    #[clap(display_order = 13)]
+    Merge {
+        /// Commits to merge into current branch
+        commits: Vec<String>,
+        /// Merge commit message
+        #[clap(short = 'm', long)]
+        message: Option<String>,
+        /// Perform the merge but don't commit
+        #[clap(long)]
+        no_commit: bool,
+        /// Fast-forward only
+        #[clap(long)]
+        ff_only: bool,
+    },
+
+    /// Reset current HEAD to the specified state
+    #[clap(display_order = 14)]
+    Reset {
+        /// Commit to reset to
+        commit: Option<String>,
+        /// Reset index but not working tree (default)
+        #[clap(long, conflicts_with_all = &["soft", "hard"])]
+        mixed: bool,
+        /// Only reset HEAD
+        #[clap(long, conflicts_with_all = &["mixed", "hard"])]
+        soft: bool,
+        /// Reset HEAD, index, and working tree
+        #[clap(long, conflicts_with_all = &["soft", "mixed"])]
+        hard: bool,
+    },
+
     /// Get and set repository or global options
-    #[clap(display_order = 10)]
+    #[clap(display_order = 15)]
     Config {
         /// Config key to get or set
         key: Option<String>,
@@ -133,8 +285,25 @@ pub enum Commands {
         local: bool,
     },
 
+    /// Manage set of tracked repositories
+    #[clap(display_order = 16)]
+    Remote {
+        /// Show remote url after name
+        #[clap(short, long)]
+        verbose: bool,
+    },
+
+    /// Access to low-level plumbing commands
+    #[clap(display_order = 100, hide = true)]
+    Plumbing {
+        #[clap(subcommand)]
+        command: PlumbingCommands,
+    },
+}
+
+#[derive(Debug, Subcommand)]
+pub enum PlumbingCommands {
     /// Show information about files in the index and the working tree
-    #[clap(display_order = 11)]
     LsFiles {
         /// Show cached files
         #[clap(long, short = 'c')]
@@ -154,7 +323,6 @@ pub enum Commands {
     },
 
     /// Provide content or type and size information for repository objects
-    #[clap(display_order = 12)]
     CatFile {
         /// The object to display
         object: String,
@@ -169,37 +337,7 @@ pub enum Commands {
         pretty_print: bool,
     },
 
-    /// Show what revision and author last modified each line of a file
-    #[clap(display_order = 13)]
-    Blame {
-        /// The file to annotate
-        file: String,
-        /// Show statistics
-        #[clap(long, short = 's')]
-        statistics: bool,
-        /// Only blame lines in the given range
-        #[clap(short = 'L', value_parser = crate::shared::AsRange, action = clap::ArgAction::Append)]
-        ranges: Vec<std::ops::RangeInclusive<u32>>,
-    },
-
-    /// Join two or more development histories together  
-    #[clap(display_order = 14)]
-    Merge {
-        /// Commits to merge
-        commits: Vec<String>,
-        /// Commit message for the merge
-        #[clap(short = 'm', long)]
-        message: Option<String>,
-        /// Perform the merge but don't commit
-        #[clap(long)]
-        no_commit: bool,
-        /// Fast-forward only
-        #[clap(long)]
-        ff_only: bool,
-    },
-
     /// Verifies the connectivity and validity of objects in the database
-    #[clap(display_order = 15)]
     Fsck {
         /// Revspec to start checking from
         spec: Option<String>,
@@ -208,40 +346,6 @@ pub enum Commands {
         verbose: bool,
     },
 
-    /// Manage set of tracked repositories
-    #[clap(display_order = 16)]
-    Remote {
-        /// Show remote url after name
-        #[clap(short, long)]
-        verbose: bool,
-    },
-
-    /// Reset current HEAD to the specified state
-    #[clap(display_order = 17)]
-    Reset {
-        /// Commit to reset to
-        commit: Option<String>,
-        /// Keep HEAD at same commit but reset index (default)
-        #[clap(long, conflicts_with_all = &["soft", "hard"])]
-        mixed: bool,
-        /// Only reset HEAD
-        #[clap(long, conflicts_with_all = &["mixed", "hard"])]
-        soft: bool,
-        /// Reset HEAD, index, and working tree
-        #[clap(long, conflicts_with_all = &["soft", "mixed"])]
-        hard: bool,
-    },
-
-    /// Access to low-level plumbing commands
-    #[clap(display_order = 100, hide = true)]
-    Plumbing {
-        #[clap(subcommand)]
-        command: PlumbingCommands,
-    },
-}
-
-#[derive(Debug, Subcommand)]
-pub enum PlumbingCommands {
     /// All original gitoxide plumbing commands
     #[clap(external_subcommand)]
     External(Vec<String>),
@@ -261,26 +365,53 @@ pub fn main() -> Result<()> {
 
     match args.command {
         Commands::Init { path, bare } => commands::init::run(path, bare),
-        Commands::Status {
-            short,
-            untracked_files,
-        } => commands::status::run(&args.repository, short, untracked_files),
         Commands::Clone {
             repository,
             directory,
             bare,
             depth,
         } => commands::clone::run(repository, directory, bare, depth),
-        Commands::Log {
-            max_count,
-            oneline,
-            graph,
-        } => commands::log::run(max_count, oneline, graph),
+        Commands::Add {
+            pathspec,
+            all,
+            update,
+            force,
+            dry_run,
+        } => commands::add::run(&args.repository, pathspec, all, update, force, dry_run),
+        Commands::Commit {
+            message,
+            all,
+            amend,
+            allow_empty,
+            author,
+        } => commands::commit::run(&args.repository, message, all, amend, allow_empty, author),
         Commands::Diff {
             pathspec,
             cached,
             unified: _unified,
         } => commands::diff::run(pathspec, cached),
+        Commands::Log {
+            max_count,
+            oneline,
+            graph,
+        } => commands::log::run(max_count, oneline, graph),
+        Commands::Status {
+            short,
+            untracked_files,
+        } => commands::status::run(&args.repository, short, untracked_files),
+        Commands::Checkout {
+            branch,
+            new_branch,
+            force,
+            paths,
+        } => commands::checkout::run(&args.repository, branch, new_branch, force, paths),
+        Commands::Branch {
+            branch_name,
+            list,
+            delete,
+            remote,
+            verbose,
+        } => commands::branch::run(&args.repository, branch_name, list, delete, remote, verbose),
         Commands::Fetch {
             remote,
             refspecs,
@@ -288,39 +419,46 @@ pub fn main() -> Result<()> {
             verbose,
             all,
         } => commands::fetch::run(&args.repository, remote, refspecs, dry_run, verbose, all),
-        Commands::Config {
-            key,
-            value,
-            list: _list,
-            global,
-            local,
-        } => commands::config::run(&args.repository, key, value, global, local),
-        Commands::LsFiles {
-            cached,
-            deleted,
-            modified,
-            others,
-            stage,
-        } => commands::ls_files::run(&args.repository, cached, deleted, modified, others, stage),
-        Commands::CatFile {
-            object,
-            show_type,
-            show_size,
-            pretty_print,
-        } => commands::cat_file::run(&args.repository, object, show_type, show_size, pretty_print),
-        Commands::Blame {
-            file,
-            statistics,
-            ranges,
-        } => commands::blame::run(&args.repository, file, statistics, ranges),
+        Commands::Push {
+            remote,
+            refspecs,
+            dry_run,
+            verbose,
+            force,
+            set_upstream,
+        } => commands::push::run(
+            &args.repository,
+            remote,
+            refspecs,
+            dry_run,
+            verbose,
+            force,
+            set_upstream,
+        ),
+        Commands::Pull {
+            remote,
+            branch,
+            dry_run,
+            verbose,
+            no_ff,
+            ff_only,
+            rebase,
+        } => commands::pull::run(
+            &args.repository,
+            remote,
+            branch,
+            dry_run,
+            verbose,
+            no_ff,
+            ff_only,
+            rebase,
+        ),
         Commands::Merge {
             commits,
             message,
             no_commit,
             ff_only,
         } => commands::merge::run(&args.repository, commits, message, no_commit, ff_only),
-        Commands::Fsck { spec, verbose } => commands::fsck::run(&args.repository, spec, verbose),
-        Commands::Remote { verbose } => commands::remote::run(&args.repository, verbose),
         Commands::Reset {
             commit,
             mixed: _,
@@ -336,7 +474,39 @@ pub fn main() -> Result<()> {
             };
             commands::reset::run(mode, commit)
         }
+        Commands::Config {
+            key,
+            value,
+            list: _list,
+            global,
+            local,
+        } => commands::config::run(&args.repository, key, value, global, local),
+        Commands::Remote { verbose } => commands::remote::run(&args.repository, verbose),
         Commands::Plumbing { command } => match command {
+            PlumbingCommands::LsFiles {
+                cached,
+                deleted,
+                modified,
+                others,
+                stage,
+            } => {
+                commands::ls_files::run(&args.repository, cached, deleted, modified, others, stage)
+            }
+            PlumbingCommands::CatFile {
+                object,
+                show_type,
+                show_size,
+                pretty_print,
+            } => commands::cat_file::run(
+                &args.repository,
+                object,
+                show_type,
+                show_size,
+                pretty_print,
+            ),
+            PlumbingCommands::Fsck { spec, verbose } => {
+                commands::fsck::run(&args.repository, spec, verbose)
+            }
             PlumbingCommands::External(_args) => crate::plumbing::main(),
         },
     }
