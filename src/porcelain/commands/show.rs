@@ -13,7 +13,9 @@ pub fn display_object(
     tree_mode: TreeMode,
     mut out: impl std::io::Write,
 ) -> anyhow::Result<()> {
-    let id = spec.single().context("rev-spec must resolve to a single object")?;
+    let id = spec
+        .single()
+        .context("rev-spec must resolve to a single object")?;
     let header = id.header()?;
     match header.kind() {
         gix::object::Kind::Tree => {
@@ -45,15 +47,15 @@ pub fn display_object(
         gix::object::Kind::Commit => {
             let object = id.object()?;
             let commit = object.try_into_commit()?;
-            
+
             writeln!(out, "commit {}", id)?;
-            
+
             let author = commit.author()?;
             writeln!(out, "Author: {} <{}>", author.name, author.email)?;
-            
+
             let time = author.time;
             writeln!(out, "Date:   {}", time)?;
-            
+
             writeln!(out)?;
             let message = commit.message()?;
             if let Some(body) = message.body() {
@@ -114,10 +116,10 @@ pub fn run(
                 }
             }
         } else {
-            // Use the copied gitoxide-core cat function  
+            // Use the copied gitoxide-core cat function
             let mut out = std::io::stdout();
             match cat(repo.clone(), &object_spec, &mut out) {
-                Ok(_) => {},
+                Ok(_) => {}
                 Err(_) => {
                     eprintln!("fatal: bad revision '{}'", object_spec);
                 }

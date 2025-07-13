@@ -31,7 +31,7 @@ pub mod describe {
     }
 }
 
-// COPIED FROM: https://github.com/Byron/gitoxide/blob/main/gitoxide-core/src/repository/commit.rs  
+// COPIED FROM: https://github.com/Byron/gitoxide/blob/main/gitoxide-core/src/repository/commit.rs
 pub fn describe(
     mut repo: gix::Repository,
     rev_spec: Option<&str>,
@@ -68,7 +68,12 @@ pub fn describe(
         .id_as_fallback(always)
         .max_candidates(max_candidates)
         .try_resolve()?
-        .with_context(|| format!("Did not find a single candidate ref for naming id '{}'", commit.id))?;
+        .with_context(|| {
+            format!(
+                "Did not find a single candidate ref for naming id '{}'",
+                commit.id
+            )
+        })?;
 
     if statistics {
         writeln!(err, "traversed {} commits", resolution.outcome.commits_seen)?;
