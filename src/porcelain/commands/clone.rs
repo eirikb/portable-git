@@ -61,38 +61,25 @@ pub fn run(
 
         println!("Cloning into '{}'...", target_dir.display());
 
-        let mut out = Vec::new();
-        let mut err = Vec::new();
-
-        let result = core::repository::clone(
-            repository,
-            Some(target_dir.clone()),
-            config,
-            gix::progress::Discard,
-            &mut out,
-            &mut err,
-            opts,
-        );
-
-        match result {
-            Ok(_) => {
-                let error_output = String::from_utf8_lossy(&err);
-                if !error_output.is_empty() {
-                    for line in error_output.lines() {
-                        if line.contains("error")
-                            || line.contains("fatal")
-                            || line.contains("warning")
-                        {
-                            eprintln!("{}", line);
-                        }
-                    }
-                }
-            }
-            Err(e) => {
-                println!("fatal: {}", e);
-            }
-        }
-
-        Ok(())
+        crate::shared::pretty::prepare_and_run(
+            "clone",
+            false,
+            true,
+            false,
+            false,
+            None,
+            move |progress, _out, _err| {
+                core::repository::clone(
+                    repository,
+                    Some(target_dir.clone()),
+                    config,
+                    progress,
+                    &mut std::io::sink(),
+                    &mut std::io::sink(),
+                    opts,
+                )
+                .map_err(|e| anyhow::anyhow!("clone failed: {}", e))
+            },
+        )
     }
 }
