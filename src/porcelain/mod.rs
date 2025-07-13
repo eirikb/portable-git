@@ -58,7 +58,6 @@ pub enum Commands {
         bare: bool,
     },
 
-
     /// Show changes between commits, commit and working tree, etc
     #[clap(display_order = 3)]
     Diff {

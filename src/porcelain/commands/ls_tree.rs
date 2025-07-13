@@ -5,14 +5,21 @@ use std::io::{self, BufWriter};
 use std::path::Path;
 
 // Helper function to resolve treeish to tree object
-fn treeish_to_tree<'repo>(treeish: Option<&str>, repo: &'repo gix::Repository) -> anyhow::Result<Tree<'repo>> {
+fn treeish_to_tree<'repo>(
+    treeish: Option<&str>,
+    repo: &'repo gix::Repository,
+) -> anyhow::Result<Tree<'repo>> {
     match treeish {
         Some(rev) => {
             let obj = repo.rev_parse_single(rev)?.object()?;
             Ok(obj.try_into_tree()?)
         }
         None => {
-            let head = repo.head()?.try_into_referent().ok_or_else(|| anyhow::anyhow!("No HEAD reference"))?.peel_to_id_in_place()?;
+            let head = repo
+                .head()?
+                .try_into_referent()
+                .ok_or_else(|| anyhow::anyhow!("No HEAD reference"))?
+                .peel_to_id_in_place()?;
             let commit = head.object()?.try_into_commit()?;
             Ok(commit.tree()?)
         }
@@ -27,7 +34,7 @@ fn format_entry(
     size: Option<Result<u64, gix::object::find::Error>>,
 ) -> anyhow::Result<()> {
     use gix::bstr::ByteSlice;
-    
+
     writeln!(
         out,
         "{:0>6o} {:?} {}\t{}{}",
@@ -48,13 +55,13 @@ fn format_entry(
 }
 
 mod entries {
-    use std::collections::VecDeque;
+    use crate::porcelain::commands::ls_tree::format_entry;
     use gix::{
         bstr::{BStr, BString, ByteSlice, ByteVec},
         objs::tree::EntryRef,
         traverse::tree::visit::Action,
     };
-    use crate::porcelain::commands::ls_tree::format_entry;
+    use std::collections::VecDeque;
 
     #[derive(Default)]
     pub struct Statistics {
@@ -75,7 +82,10 @@ mod entries {
     }
 
     impl<'repo, 'a> Traverse<'repo, 'a> {
-        pub fn new(repo: Option<&'repo gix::Repository>, out: Option<&'a mut dyn std::io::Write>) -> Self {
+        pub fn new(
+            repo: Option<&'repo gix::Repository>,
+            out: Option<&'a mut dyn std::io::Write>,
+        ) -> Self {
             Traverse {
                 stats: Default::default(),
                 repo,
@@ -156,12 +166,7 @@ mod entries {
             }
 
             if let Some(out) = self.out.as_mut() {
-                let _ = format_entry(
-                    out,
-                    entry,
-                    self.path.as_bstr(),
-                    size.map(Ok)
-                );
+                let _ = format_entry(out, entry, self.path.as_bstr(), size.map(Ok));
             }
             Action::Continue
         }
@@ -213,7 +218,7 @@ pub fn run(
     };
 
     let tree_ish_str = tree_ish.as_deref();
-    
+
     let mut out = std::io::stdout();
 
     // Use the copied gitoxide-core entries function
