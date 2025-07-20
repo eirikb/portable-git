@@ -1,14 +1,11 @@
-pub mod cat_file;
+pub mod blame;
 pub mod clone;
 pub mod config;
 pub mod describe;
 pub mod diff;
 pub mod fetch;
-pub mod fsck;
 pub mod init;
 pub mod log;
-pub mod ls_files;
-pub mod ls_tree;
 pub mod merge;
 pub mod remote;
 pub mod reset;

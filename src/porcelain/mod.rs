@@ -217,6 +217,19 @@ pub enum Commands {
         dirty: Option<String>,
     },
 
+    /// Show what revision and author last modified each line of a file
+    #[clap(display_order = 13)]
+    Blame {
+        /// The file to annotate
+        file: String,
+        /// Show statistics
+        #[clap(long, short = 's')]
+        statistics: bool,
+        /// Only blame lines in the given range
+        #[clap(short = 'L', value_parser = crate::shared::AsRange, action = clap::ArgAction::Append)]
+        ranges: Vec<std::ops::RangeInclusive<u32>>,
+    },
+
     /// Access to low-level plumbing commands
     #[clap(display_order = 100, hide = true)]
     Plumbing {
@@ -227,64 +240,6 @@ pub enum Commands {
 
 #[derive(Debug, Subcommand)]
 pub enum PlumbingCommands {
-    /// Show information about files in the index and the working tree
-    LsFiles {
-        /// Show cached files
-        #[clap(long, short = 'c')]
-        cached: bool,
-        /// Show deleted files
-        #[clap(long, short = 'd')]
-        deleted: bool,
-        /// Show modified files
-        #[clap(long, short = 'm')]
-        modified: bool,
-        /// Show other files
-        #[clap(long, short = 'o')]
-        others: bool,
-        /// Show staged files
-        #[clap(long, short = 's')]
-        stage: bool,
-    },
-
-    /// Provide content or type and size information for repository objects
-    CatFile {
-        /// The object to display
-        object: String,
-        /// Show object type
-        #[clap(short = 't', long)]
-        show_type: bool,
-        /// Show object size
-        #[clap(short = 's', long)]
-        show_size: bool,
-        /// Pretty-print the contents
-        #[clap(short = 'p', long)]
-        pretty_print: bool,
-    },
-
-    /// Verifies the connectivity and validity of objects in the database
-    Fsck {
-        /// Revspec to start checking from
-        spec: Option<String>,
-        /// Show detailed information
-        #[clap(long, short = 'v')]
-        verbose: bool,
-    },
-
-    /// List the contents of a tree object
-    LsTree {
-        /// Tree-ish to list
-        tree_ish: Option<String>,
-        /// Show only filenames
-        #[clap(long)]
-        name_only: bool,
-        /// Recurse into sub-trees
-        #[clap(short = 'r', long)]
-        recursive: bool,
-        /// Show tree entries with long format
-        #[clap(short = 'l', long)]
-        long: bool,
-    },
-
     /// All original gitoxide plumbing commands
     #[clap(external_subcommand)]
     External(Vec<String>),
@@ -385,37 +340,12 @@ pub fn main() -> Result<()> {
             exact_match,
             dirty,
         ),
+        Commands::Blame {
+            file,
+            statistics,
+            ranges,
+        } => commands::blame::run(&args.repository, file, statistics, ranges),
         Commands::Plumbing { command } => match command {
-            PlumbingCommands::LsFiles {
-                cached,
-                deleted,
-                modified,
-                others,
-                stage,
-            } => {
-                commands::ls_files::run(&args.repository, cached, deleted, modified, others, stage)
-            }
-            PlumbingCommands::CatFile {
-                object,
-                show_type,
-                show_size,
-                pretty_print,
-            } => commands::cat_file::run(
-                &args.repository,
-                object,
-                show_type,
-                show_size,
-                pretty_print,
-            ),
-            PlumbingCommands::Fsck { spec, verbose } => {
-                commands::fsck::run(&args.repository, spec, verbose)
-            }
-            PlumbingCommands::LsTree {
-                tree_ish,
-                name_only,
-                recursive,
-                long,
-            } => commands::ls_tree::run(&args.repository, tree_ish, name_only, recursive, long),
             PlumbingCommands::External(_args) => crate::plumbing::main(),
         },
     }
