@@ -45,6 +45,9 @@ pub enum Commands {
         /// Number of commits to fetch
         #[clap(long)]
         depth: Option<u32>,
+        /// Clone all submodules recursively
+        #[clap(long)]
+        recurse_submodules: bool,
     },
 
     /// Create an empty Git repository or reinitialize an existing one
@@ -306,7 +309,8 @@ pub fn main() -> Result<()> {
             directory,
             bare,
             depth,
-        } => commands::clone::run(repository, directory, bare, depth),
+            recurse_submodules,
+        } => commands::clone::run(repository, directory, bare, depth, recurse_submodules),
         Commands::Diff {
             pathspec,
             cached,
