@@ -2778,6 +2778,7 @@ dependencies = [
  "tracing",
  "tracing-forest",
  "tracing-subscriber",
+ "walkdir",
  "webpki-roots 0.25.4",
 ]
 

@@ -61,8 +61,35 @@ pub enum Commands {
         bare: bool,
     },
 
-    /// Show changes between commits, commit and working tree, etc
+    /// Add file contents to the index
     #[clap(display_order = 3)]
+    Add {
+        /// Files to add to the index
+        pathspec: Vec<PathBuf>,
+        /// Add all modified and new files
+        #[clap(short = 'A', long)]
+        all: bool,
+        /// Add only modified files (not new files)
+        #[clap(short = 'u', long)]
+        update: bool,
+    },
+
+    /// Record changes to the repository
+    #[clap(display_order = 4)]
+    Commit {
+        /// Commit message
+        #[clap(short = 'm', long)]
+        message: Option<String>,
+        /// Add all modified files before committing
+        #[clap(short = 'a', long)]
+        all: bool,
+        /// Allow empty commits
+        #[clap(long)]
+        allow_empty: bool,
+    },
+
+    /// Show changes between commits, commit and working tree, etc
+    #[clap(display_order = 5)]
     Diff {
         /// Files to compare
         pathspec: Vec<PathBuf>,
@@ -75,7 +102,7 @@ pub enum Commands {
     },
 
     /// Show commit logs
-    #[clap(display_order = 4)]
+    #[clap(display_order = 6)]
     Log {
         /// Number of commits to show
         #[clap(short = 'n', long)]
@@ -89,7 +116,7 @@ pub enum Commands {
     },
 
     /// Show the working tree status
-    #[clap(display_order = 5)]
+    #[clap(display_order = 7)]
     Status {
         /// Give the output in a short format
         #[clap(short = 's', long)]
@@ -100,7 +127,7 @@ pub enum Commands {
     },
 
     /// Download objects and refs from another repository
-    #[clap(display_order = 6)]
+    #[clap(display_order = 8)]
     Fetch {
         /// Remote name or URL to fetch from
         remote: Option<String>,
@@ -119,7 +146,7 @@ pub enum Commands {
     },
 
     /// Join two or more development histories together
-    #[clap(display_order = 7)]
+    #[clap(display_order = 9)]
     Merge {
         /// Commits to merge into current branch
         commits: Vec<String>,
@@ -135,7 +162,7 @@ pub enum Commands {
     },
 
     /// Reset current HEAD to the specified state
-    #[clap(display_order = 8)]
+    #[clap(display_order = 10)]
     Reset {
         /// Commit to reset to
         commit: Option<String>,
@@ -151,7 +178,7 @@ pub enum Commands {
     },
 
     /// Get and set repository or global options
-    #[clap(display_order = 9)]
+    #[clap(display_order = 11)]
     Config {
         /// Config key to get or set
         key: Option<String>,
@@ -169,7 +196,7 @@ pub enum Commands {
     },
 
     /// Manage set of tracked repositories
-    #[clap(display_order = 10)]
+    #[clap(display_order = 12)]
     Remote {
         /// Show remote url after name
         #[clap(short, long)]
@@ -177,7 +204,7 @@ pub enum Commands {
     },
 
     /// Show various types of objects
-    #[clap(display_order = 11)]
+    #[clap(display_order = 13)]
     Show {
         /// Objects to show
         objects: Vec<String>,
@@ -193,7 +220,7 @@ pub enum Commands {
     },
 
     /// Give an object a human readable name based on an available ref
-    #[clap(display_order = 12)]
+    #[clap(display_order = 14)]
     Describe {
         /// Committish object names to describe
         commit: Option<String>,
@@ -217,6 +244,19 @@ pub enum Commands {
         dirty: Option<String>,
     },
 
+    /// Show what revision and author last modified each line of a file
+    #[clap(display_order = 15)]
+    Blame {
+        /// The file to annotate
+        file: String,
+        /// Show statistics
+        #[clap(long, short = 's')]
+        statistics: bool,
+        /// Only blame lines in the given range
+        #[clap(short = 'L', value_parser = crate::shared::AsRange, action = clap::ArgAction::Append)]
+        ranges: Vec<std::ops::RangeInclusive<u32>>,
+    },
+
     /// Access to low-level plumbing commands
     #[clap(display_order = 100, hide = true)]
     Plumbing {
@@ -227,64 +267,6 @@ pub enum Commands {
 
 #[derive(Debug, Subcommand)]
 pub enum PlumbingCommands {
-    /// Show information about files in the index and the working tree
-    LsFiles {
-        /// Show cached files
-        #[clap(long, short = 'c')]
-        cached: bool,
-        /// Show deleted files
-        #[clap(long, short = 'd')]
-        deleted: bool,
-        /// Show modified files
-        #[clap(long, short = 'm')]
-        modified: bool,
-        /// Show other files
-        #[clap(long, short = 'o')]
-        others: bool,
-        /// Show staged files
-        #[clap(long, short = 's')]
-        stage: bool,
-    },
-
-    /// Provide content or type and size information for repository objects
-    CatFile {
-        /// The object to display
-        object: String,
-        /// Show object type
-        #[clap(short = 't', long)]
-        show_type: bool,
-        /// Show object size
-        #[clap(short = 's', long)]
-        show_size: bool,
-        /// Pretty-print the contents
-        #[clap(short = 'p', long)]
-        pretty_print: bool,
-    },
-
-    /// Verifies the connectivity and validity of objects in the database
-    Fsck {
-        /// Revspec to start checking from
-        spec: Option<String>,
-        /// Show detailed information
-        #[clap(long, short = 'v')]
-        verbose: bool,
-    },
-
-    /// List the contents of a tree object
-    LsTree {
-        /// Tree-ish to list
-        tree_ish: Option<String>,
-        /// Show only filenames
-        #[clap(long)]
-        name_only: bool,
-        /// Recurse into sub-trees
-        #[clap(short = 'r', long)]
-        recursive: bool,
-        /// Show tree entries with long format
-        #[clap(short = 'l', long)]
-        long: bool,
-    },
-
     /// All original gitoxide plumbing commands
     #[clap(external_subcommand)]
     External(Vec<String>),
@@ -311,6 +293,16 @@ pub fn main() -> Result<()> {
             depth,
             recurse_submodules,
         } => commands::clone::run(repository, directory, bare, depth, recurse_submodules),
+        Commands::Add {
+            pathspec,
+            all,
+            update,
+        } => commands::add::run(&args.repository, pathspec, all, update),
+        Commands::Commit {
+            message,
+            all,
+            allow_empty,
+        } => commands::commit::run(&args.repository, message, all, allow_empty),
         Commands::Diff {
             pathspec,
             cached,
@@ -385,37 +377,12 @@ pub fn main() -> Result<()> {
             exact_match,
             dirty,
         ),
+        Commands::Blame {
+            file,
+            statistics,
+            ranges,
+        } => commands::blame::run(&args.repository, file, statistics, ranges),
         Commands::Plumbing { command } => match command {
-            PlumbingCommands::LsFiles {
-                cached,
-                deleted,
-                modified,
-                others,
-                stage,
-            } => {
-                commands::ls_files::run(&args.repository, cached, deleted, modified, others, stage)
-            }
-            PlumbingCommands::CatFile {
-                object,
-                show_type,
-                show_size,
-                pretty_print,
-            } => commands::cat_file::run(
-                &args.repository,
-                object,
-                show_type,
-                show_size,
-                pretty_print,
-            ),
-            PlumbingCommands::Fsck { spec, verbose } => {
-                commands::fsck::run(&args.repository, spec, verbose)
-            }
-            PlumbingCommands::LsTree {
-                tree_ish,
-                name_only,
-                recursive,
-                long,
-            } => commands::ls_tree::run(&args.repository, tree_ish, name_only, recursive, long),
             PlumbingCommands::External(_args) => crate::plumbing::main(),
         },
     }
