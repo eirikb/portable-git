@@ -293,8 +293,16 @@ pub fn main() -> Result<()> {
             depth,
             recurse_submodules,
         } => commands::clone::run(repository, directory, bare, depth, recurse_submodules),
-        Commands::Add { pathspec, all, update } => commands::add::run(&args.repository, pathspec, all, update),
-        Commands::Commit { message, all, allow_empty } => commands::commit::run(&args.repository, message, all, allow_empty),
+        Commands::Add {
+            pathspec,
+            all,
+            update,
+        } => commands::add::run(&args.repository, pathspec, all, update),
+        Commands::Commit {
+            message,
+            all,
+            allow_empty,
+        } => commands::commit::run(&args.repository, message, all, allow_empty),
         Commands::Diff {
             pathspec,
             cached,
