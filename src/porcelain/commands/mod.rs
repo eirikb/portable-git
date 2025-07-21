@@ -1,5 +1,8 @@
+pub mod add;
 pub mod blame;
 pub mod clone;
+pub mod commit;
+mod index_utils;
 pub mod config;
 pub mod describe;
 pub mod diff;
