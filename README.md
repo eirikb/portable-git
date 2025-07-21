@@ -13,7 +13,7 @@ The **easiest and recommended way** to use portable-git is through [gg](https://
 built-in as the `git` command. Run:
 
 ```bash
-gg git
+gg.cmd git
 ```
 
 More detailed (Linux):
