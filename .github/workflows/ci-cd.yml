@@ -1,6 +1,11 @@
 name: CI/CD
 
 on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g. 1.2.3)'
+        required: true
   push:
     branches: [ main ]
   pull_request:
@@ -18,7 +23,7 @@ jobs:
   calculate-version:
     name: Calculate Version
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch'
     outputs:
       should-release: ${{ steps.version.outputs.should-release }}
       new-version: ${{ steps.version.outputs.new-version }}
@@ -34,6 +39,17 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          # Manual release via workflow_dispatch: use input version and skip auto-calculation
+          if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
+            echo "Manual release requested: version ${{ github.event.inputs.version }}"
+            echo "should-release=true" >> $GITHUB_OUTPUT
+            echo "new-version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+            echo "Updating Cargo.toml to version ${{ github.event.inputs.version }}"
+            sed -i "s/version = \"0.0.0-dev\"/version = \"${{ github.event.inputs.version }}\"/" Cargo.toml
+            mkdir -p release-artifacts
+            cp Cargo.toml release-artifacts/
+            exit 0
+          fi
           # Use commit message (which is PR title for squash merges)
           COMMIT_MSG="${{ github.event.head_commit.message }}"
           
